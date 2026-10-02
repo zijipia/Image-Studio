@@ -53,14 +53,10 @@ function normalizeLanguageCode(code: string) {
 }
 
 async function loadGoogleFont(family: string, text: string): Promise<Buffer> {
-  const params = new URLSearchParams({
-    family,
-    text,
-  });
+  const params = new URLSearchParams({ family, text });
   const cssResponse = await fetch(`https://fonts.googleapis.com/css2?${params.toString()}`, {
     headers: {
-      // Google Fonts serves WOFF2 to modern browsers. Satori accepts TTF/OTF/WOFF,
-      // so use a legacy UA to request a TTF-compatible source.
+      // Request a TTF/OTF-compatible source; Satori does not support WOFF2.
       "User-Agent": "Mozilla/5.0 (Macintosh; U; Intel Mac OS X 10_6_8) AppleWebKit/533.21.1 Safari/533.21.1",
     },
   });
@@ -69,7 +65,7 @@ async function loadGoogleFont(family: string, text: string): Promise<Buffer> {
   }
 
   const css = await cssResponse.text();
-  const match = css.match(/src:\s*url\\(([^)]+)\\)\s*format\\(['\"](?:truetype|opentype)['\"]\\)/i);
+  const match = css.match(/src:\s*url\(([^)]+)\)\s*format\(['"](?:truetype|opentype)['"]\)/i);
   if (!match?.[1]) {
     throw new Error(`No TTF/OTF font source returned for ${family}`);
   }
