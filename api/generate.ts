@@ -1,6 +1,6 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import type { AnyGenerateRequest } from "../src/lib/types.js";
-import { dispatchGenerateImage } from "../src/lib/image-generator.js";
+import { dispatchGenerate } from "../src/lib/animated-generator.js";
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== "POST") {
@@ -15,17 +15,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(400).json({ error: "Invalid payload: request body is required." });
     }
 
-    const { png, height, filename } = await dispatchGenerateImage(body);
+    const { buffer, height, mime, filename } = await dispatchGenerate(body);
 
-    res.setHeader("Content-Type", "image/png");
-    res.setHeader("Content-Length", png.length.toString());
+    res.setHeader("Content-Type", mime);
+    res.setHeader("Content-Length", buffer.length.toString());
     res.setHeader("X-Image-Height", height.toString());
     res.setHeader(
       "Content-Disposition",
       `attachment; filename="${encodeURIComponent(filename)}"`
     );
 
-    return res.status(200).send(png);
+    return res.status(200).send(buffer);
   } catch (error) {
     console.error("[api/generate] Generation error:", error);
     const message = error instanceof Error ? error.message : "Internal Server Error";
