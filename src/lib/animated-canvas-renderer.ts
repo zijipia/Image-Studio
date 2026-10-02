@@ -4,6 +4,7 @@ import satori from "satori";
 import sharp from "sharp";
 import type { CustomCanvasData, CustomElement } from "./types.js";
 import { imageToDataUri } from "./image-generator.js";
+import { loadSatoriAdditionalAsset } from "./unicode-fonts.js";
 
 let fonts: Array<{ name: string; data: Buffer; weight: 400 | 500; style: "normal" }> | null = null;
 const animatedSourceCache = new Map<string, Promise<Buffer>>();
@@ -138,6 +139,6 @@ export async function renderCustomCanvasSvg(canvas: CustomCanvasData, timeMs = 0
   const elements = await Promise.all([...canvas.elements].sort((a, b) => (a.zIndex ?? 0) - (b.zIndex ?? 0)).map(renderElement));
   children.push(...elements);
   const tree = { type: "div", props: { style: { position: "relative", display: "flex", width: px(canvas.width), height: px(canvas.height), overflow: "hidden", background: safeBackground(canvas.background) }, children } };
-  const svg = await satori(tree as any, { width: canvas.width, height: canvas.height, fonts: loadFonts() });
+  const svg = await satori(tree as any, { width: canvas.width, height: canvas.height, fonts: loadFonts(), loadAdditionalAsset: loadSatoriAdditionalAsset });
   return Buffer.from(svg);
 }
