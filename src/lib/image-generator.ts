@@ -9,7 +9,7 @@ import type {
   QuoteData,
   CustomCanvasData,
   AnyGenerateRequest,
-} from "./types";
+} from "./types.js";
 import {
   CANVAS_WIDTH,
   CARD_WIDTH,
@@ -28,7 +28,7 @@ import {
   calculateLeaderboardHeight,
   QUOTE_WIDTH,
   QUOTE_HEIGHT,
-} from "./constants";
+} from "./constants.js";
 
 export {
   CANVAS_WIDTH,
