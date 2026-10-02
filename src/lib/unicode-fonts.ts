@@ -1,7 +1,7 @@
 const fontCache = new Map<string, Promise<Array<{
   name: string;
   data: Buffer;
-  weight: 400;
+  weight: 400 | 500;
   style: "normal";
   lang?: string;
 }> | null>>();
@@ -38,7 +38,7 @@ const LANGUAGE_FONTS: Record<string, string | undefined> = {
 function normalizeLanguageCode(code: string) {
   const primary = code.split("|")[0];
   if (LANGUAGE_FONTS[primary]) return primary;
-  const base = primary.split("-")[0];
+  const base = primary.split("-")[0].toLowerCase();
   if (base === "ja") return "ja-JP";
   if (base === "ko") return "ko-KR";
   if (base === "zh") return primary.toLowerCase() === "zh-tw" ? "zh-TW" : "zh-CN";
@@ -52,12 +52,40 @@ function normalizeLanguageCode(code: string) {
   return "unknown";
 }
 
+// Satori can report a mixed Latin + CJK segment as `unknown`. Infer the
+// script from the actual code points so titles such as "日本語 - Anemone"
+// still select a CJK font instead of falling back to Latin-only Noto Sans.
+function detectScriptLocale(text: string, languageCode: string) {
+  if (/\p{Script=Hiragana}|\p{Script=Katakana}/u.test(text)) return "ja-JP";
+  if (/\p{Script=Hangul}/u.test(text)) return "ko-KR";
+  if (/\p{Script=Han}/u.test(text)) {
+    const normalized = normalizeLanguageCode(languageCode);
+    if (normalized === "ja-JP") return normalized;
+    if (normalized === "zh-TW" || normalized === "zh-HK") return normalized;
+    return "zh-CN";
+  }
+  if (/\p{Script=Thai}/u.test(text)) return "th-TH";
+  if (/\p{Script=Arabic}/u.test(text)) return "ar";
+  if (/\p{Script=Hebrew}/u.test(text)) return "he-IL";
+  if (/\p{Script=Devanagari}/u.test(text)) return "hi-IN";
+  if (/\p{Script=Georgian}/u.test(text)) return "ka-GE";
+  if (/\p{Script=Armenian}/u.test(text)) return "hy-AM";
+  if (/\p{Script=Khmer}/u.test(text)) return "km-KH";
+  if (/\p{Script=Lao}/u.test(text)) return "lo-LA";
+  if (/\p{Script=Myanmar}/u.test(text)) return "my-MM";
+  if (/\p{Script=Cyrillic}/u.test(text)) return "ru-RU";
+  if (/\p{Script=Greek}/u.test(text)) return "el-GR";
+  if (/\p{Script=Latin}/u.test(text) && /[ăâđêôơưĂÂĐÊÔƠƯ]/u.test(text)) return "vi-VN";
+  return normalizeLanguageCode(languageCode);
+}
+
 async function loadGoogleFont(family: string, text: string): Promise<Buffer> {
   const params = new URLSearchParams({ family, text });
   const cssResponse = await fetch(`https://fonts.googleapis.com/css2?${params.toString()}`, {
     headers: {
-      // Request a TTF/OTF-compatible source; Satori does not support WOFF2.
-      "User-Agent": "Mozilla/5.0 (Macintosh; U; Intel Mac OS X 10_6_8) AppleWebKit/533.21.1 Safari/533.21.1",
+      // Google Fonts uses UA negotiation. An old UA returns TTF/OTF, which is
+      // required because Satori does not support WOFF2.
+      "User-Agent": "Mozilla/4.0",
     },
   });
   if (!cssResponse.ok) {
@@ -65,12 +93,13 @@ async function loadGoogleFont(family: string, text: string): Promise<Buffer> {
   }
 
   const css = await cssResponse.text();
-  const match = css.match(/src:\s*url\(([^)]+)\)\s*format\(['"](?:truetype|opentype)['"]\)/i);
-  if (!match?.[1]) {
+  const urls = [...css.matchAll(/src:\s*url\(([^)]+)\)\s*format\(['"](truetype|opentype)['"]\)/gi)];
+  const url = urls[0]?.[1];
+  if (!url) {
     throw new Error(`No TTF/OTF font source returned for ${family}`);
   }
 
-  const fontResponse = await fetch(match[1]);
+  const fontResponse = await fetch(url);
   if (!fontResponse.ok) {
     throw new Error(`Google Fonts font request failed: ${fontResponse.status}`);
   }
@@ -80,23 +109,32 @@ async function loadGoogleFont(family: string, text: string): Promise<Buffer> {
 export async function loadSatoriAdditionalAsset(
   languageCode: string,
   text: string,
-): Promise<Array<{ name: string; data: Buffer; weight: 400; style: "normal"; lang?: string }> | null> {
+): Promise<Array<{ name: string; data: Buffer; weight: 400 | 500; style: "normal"; lang?: string }> | null> {
   if (!text || languageCode === "emoji") return null;
 
-  const locale = normalizeLanguageCode(languageCode);
+  const locale = detectScriptLocale(text, languageCode);
   const family = LANGUAGE_FONTS[locale] ?? "Noto Sans";
   const key = `${locale}:${text}`;
 
   let pending = fontCache.get(key);
   if (!pending) {
     pending = loadGoogleFont(family, text)
-      .then((data) => [{
-        name: `ImageStudio-${locale}-fallback`,
-        data,
-        weight: 400 as const,
-        style: "normal" as const,
-        lang: locale === "unknown" ? undefined : locale,
-      }])
+      .then((data) => [
+        {
+          name: `ImageStudio-${locale}-fallback`,
+          data,
+          weight: 400 as const,
+          style: "normal" as const,
+          lang: locale === "unknown" ? undefined : locale,
+        },
+        {
+          name: `ImageStudio-${locale}-fallback`,
+          data,
+          weight: 500 as const,
+          style: "normal" as const,
+          lang: locale === "unknown" ? undefined : locale,
+        },
+      ])
       .catch((error) => {
         console.warn(`[unicode-fonts] Failed to load ${family} for ${JSON.stringify(text)}:`, error);
         return null;
