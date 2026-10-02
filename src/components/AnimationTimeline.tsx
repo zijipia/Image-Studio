@@ -10,9 +10,9 @@ const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
 const ease = (t: number) => t * t * (3 - 2 * t);
 
 const defaultCanvas: CustomCanvasData = { title: "Welcome Card Animation", width: 930, height: 280, background: "linear-gradient(120deg, #090614, #2a1748 55%, #ff9f75)", elements: [
-  { id: "title", type: "text", x: 210, y: 72, width: 650, height: 58, content: "Welcome, zijistudio!", color: "#fff", fontSize: 46, fontWeight: 500 },
-  { id: "subtitle", type: "text", x: 212, y: 136, width: 600, height: 40, content: "to Hệ Võ Danh 2.", color: "#ddd6fe", fontSize: 28, fontWeight: 400 },
-  { id: "avatar", type: "avatar", x: 34, y: 38, width: 148, height: 148, imageUrl: "https://i.ytimg.com/vi/MsHvLrs6sjk/hq720.jpg", borderRadius: 999, border: "3px solid rgba(255,255,255,.35)" },
+  { id: "title", type: "text", x: 210, y: 72, width: 650, height: 58, content: "Welcome, ziji!", color: "#fff", fontSize: 46, fontWeight: 500 },
+  { id: "subtitle", type: "text", x: 212, y: 136, width: 600, height: 40, content: "to Hội Vô Danh 2.", color: "#ddd6fe", fontSize: 28, fontWeight: 400 },
+  { id: "avatar", type: "avatar", x: 34, y: 38, width: 148, height: 148, imageUrl: "https://raw.githubusercontent.com/zijipia/zijipia/refs/heads/main/Assets/zilove.png", borderRadius: 999, border: "3px solid rgba(255,255,255,.35)" },
 ] };
 const defaultTracks: Track[] = [
   { elementId: "title", keyframes: [{ id: "title-0", time: 0, x: 175, y: 72, opacity: 0 }, { id: "title-1", time: 360, x: 210, y: 72, opacity: 1 }] },
