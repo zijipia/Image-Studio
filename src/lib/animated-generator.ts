@@ -2,7 +2,6 @@ import sharp from "sharp";
 import { dispatchGenerateImage, generateCustomCanvasImage } from "./image-generator.js";
 import type {
   AnimatedGenerateData,
-  AnimatedGenerateRequest,
   AnyGenerateRequest,
   CustomCanvasData,
 } from "./types.js";
@@ -90,8 +89,6 @@ async function mapWithConcurrency<T, R>(
 
 async function encodeAnimatedFrames(
   frames: Buffer[],
-  width: number,
-  height: number,
   format: "gif" | "webp",
   delays: number[],
   loop: number
@@ -181,8 +178,6 @@ export async function generateAnimatedImage(
 
   const buffer = await encodeAnimatedFrames(
     renderedFrames,
-    firstFrame.width,
-    firstFrame.height,
     format,
     delays,
     loop
@@ -209,8 +204,8 @@ export async function generateAnimatedImage(
 export async function dispatchGenerate(
   req: AnyGenerateRequest
 ): Promise<GenerateResult> {
-  if ((req as AnimatedGenerateRequest).type === "animated") {
-    return generateAnimatedImage((req as AnimatedGenerateRequest).data);
+  if (req.type === "animated") {
+    return generateAnimatedImage(req.data);
   }
 
   const result = await dispatchGenerateImage(req);
