@@ -1,0 +1,6 @@
+{
+  "name": "Song Image Generator",
+  "description": "Dynamic 1130px social card generator for playlist search results powered by Satori, Sharp, and React.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
