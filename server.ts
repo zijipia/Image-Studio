@@ -2,7 +2,7 @@ import express from "express";
 import { createServer as createViteServer } from "vite";
 import path from "path";
 import { fileURLToPath } from "url";
-import { dispatchGenerateImage } from "./src/lib/image-generator";
+import { dispatchGenerate } from "./src/lib/animated-generator";
 import type { AnyGenerateRequest } from "./src/lib/types";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -14,7 +14,7 @@ async function startServer() {
 
   app.use(express.json({ limit: "15mb" }));
 
-  // API Route for image generation (Song, Profile, Leaderboard, Quote)
+  // API Route for static and animated image generation.
   app.post("/api/generate", async (req, res) => {
     try {
       const body = req.body as AnyGenerateRequest;
@@ -23,17 +23,17 @@ async function startServer() {
         return res.status(400).json({ error: "Invalid payload: request body is required." });
       }
 
-      const { png, height, filename } = await dispatchGenerateImage(body);
+      const { buffer, height, mime, filename } = await dispatchGenerate(body);
 
-      res.setHeader("Content-Type", "image/png");
-      res.setHeader("Content-Length", png.length.toString());
+      res.setHeader("Content-Type", mime);
+      res.setHeader("Content-Length", buffer.length.toString());
       res.setHeader("X-Image-Height", height.toString());
       res.setHeader(
         "Content-Disposition",
         `attachment; filename="${encodeURIComponent(filename)}"`
       );
 
-      return res.status(200).send(png);
+      return res.status(200).send(buffer);
     } catch (error) {
       console.error("[server] Generation error:", error);
       const message = error instanceof Error ? error.message : "Internal Server Error";
