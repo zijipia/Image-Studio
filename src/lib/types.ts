@@ -1,4 +1,4 @@
-export type GeneratorType = "song" | "profile" | "leaderboard" | "quote" | "custom";
+export type GeneratorType = "song" | "profile" | "leaderboard" | "quote" | "custom" | "animated";
 
 export interface SongResult {
   index: number;
@@ -108,12 +108,36 @@ export interface CustomGenerateRequest {
   data: CustomCanvasData;
 }
 
+/* =========================================================================
+   ANIMATED CANVAS TYPES
+   ========================================================================= */
+
+export type AnimatedImageFormat = "gif" | "webp";
+
+export interface AnimatedGenerateData {
+  /** Used as the output filename when no custom filename is provided. */
+  title: string;
+  /** Every frame must use the same width and height. */
+  frames: CustomCanvasData[];
+  /** Delay between frames in milliseconds. Can be specified per frame. */
+  delay?: number | number[];
+  /** Number of animation iterations. 0 means infinite. */
+  loop?: number;
+  format?: AnimatedImageFormat;
+}
+
+export interface AnimatedGenerateRequest {
+  type: "animated";
+  data: AnimatedGenerateData;
+}
+
 export type AnyGenerateRequest =
   | SongGenerateRequest
   | ProfileGenerateRequest
   | LeaderboardGenerateRequest
   | QuoteGenerateRequest
   | CustomGenerateRequest
+  | AnimatedGenerateRequest
   // Backward compatibility with raw song payload
   | { title: string; items: SongResult[]; type?: undefined };
 
