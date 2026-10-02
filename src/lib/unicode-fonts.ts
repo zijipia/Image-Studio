@@ -44,6 +44,32 @@ const LANGUAGE_FONTS: Record<string, string> = {
   "devanagari": "Noto Sans Devanagari",
 };
 
+/**
+ * `FontOptions.lang` is validated by Satori against its own Locale enum.
+ * Vietnamese, Russian, Ukrainian, Greek, etc. are not accepted there even
+ * though they are valid language identifiers. Keep the language for font
+ * selection/name purposes, but only pass supported locales to Satori.
+ */
+const SATORI_SUPPORTED_LOCALES = new Set([
+  "ja-JP",
+  "ko-KR",
+  "zh-CN",
+  "zh-TW",
+  "zh-HK",
+  "th-TH",
+  "bn-IN",
+  "ar-AR",
+  "ta-IN",
+  "ml-IN",
+  "he-IL",
+  "te-IN",
+  "devanagari",
+  "kannada",
+  "emoji",
+  "symbol",
+  "math",
+]);
+
 type FontSource = {
   family: string;
   language: string;
@@ -56,7 +82,7 @@ const fontCache = new Map<string, Promise<SatoriFont[] | null>>();
 // Vietnamese alphabet/marks in the request so a tiny segment such as `ỳ`,
 // `ượ`, or `ệ` cannot accidentally receive a Latin-only subset.
 const VIETNAMESE_GLYPHS =
-  "ĂăÂâĐđÊêÔôƠơƯư ÁáÀàẢảÃãẠạĂắằẳẵặÂấầẩẫậÊếềểễệÔốồổỗộƠớờởỡợƯứừửữự " +
+  "ĂăÂâĐđÊêÔôƠơƯư ÁáÀàẢảÃãẠạ Ăắằẳẵặ Âấầẩẫậ Êếềểễệ Ôốồổỗộ Ơớờởỡợ Ưứừửữự " +
   "ỲỳÝýỶỷỸỹỴỵ";
 
 function normalizeLanguageCode(code: string): string | null {
@@ -170,20 +196,26 @@ export async function loadSatoriAdditionalAsset(
       const safeLanguage = language.replace(/[^a-zA-Z0-9-]/g, "_");
       const name = `ImageStudio-${safeLanguage}-${hashText(requestText ?? text)}`;
 
+      // Only pass locales that Satori explicitly accepts. For Vietnamese we
+      // intentionally omit `lang`; the font still supplies the missing glyphs.
+      const satoriLang = SATORI_SUPPORTED_LOCALES.has(language)
+        ? language
+        : undefined;
+
       return [
         {
           name,
           data,
           weight: 400 as const,
           style: "normal" as const,
-          lang: language,
+          ...(satoriLang ? { lang: satoriLang } : {}),
         },
         {
           name,
           data,
           weight: 500 as const,
           style: "normal" as const,
-          lang: language,
+          ...(satoriLang ? { lang: satoriLang } : {}),
         },
       ];
     }),
