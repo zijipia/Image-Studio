@@ -1,0 +1,65 @@
+name: apply-unicode-font-fix
+
+on:
+  push:
+    branches:
+      - fix/unicode-font-fallback
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/unicode-font-fallback
+          fetch-depth: 0
+
+      - name: Apply Satori Unicode fallback
+        shell: python
+        run: |
+          from pathlib import Path
+
+          image = Path("src/lib/image-generator.ts")
+          text = image.read_text(encoding="utf-8")
+          if '"./unicode-fonts.js"' not in text:
+              text = text.replace(
+                  'import sharp from "sharp";\n',
+                  'import sharp from "sharp";\nimport { loadSatoriAdditionalAsset } from "./unicode-fonts.js";\n',
+                  1,
+              )
+          old = '    fonts,\n  });'
+          new = '    fonts,\n    loadAdditionalAsset: loadSatoriAdditionalAsset,\n  });'
+          text = text.replace(old, new)
+          image.write_text(text, encoding="utf-8")
+
+          animated = Path("src/lib/animated-canvas-renderer.ts")
+          text = animated.read_text(encoding="utf-8")
+          if '"./unicode-fonts.js"' not in text:
+              text = text.replace(
+                  'import { imageToDataUri } from "./image-generator.js";\n',
+                  'import { imageToDataUri } from "./image-generator.js";\nimport { loadSatoriAdditionalAsset } from "./unicode-fonts.js";\n',
+                  1,
+              )
+          old = 'fonts: loadFonts() });'
+          new = 'fonts: loadFonts(), loadAdditionalAsset: loadSatoriAdditionalAsset });'
+          text = text.replace(old, new)
+          animated.write_text(text, encoding="utf-8")
+
+          workflow = Path(".github/workflows/apply-unicode-font-fix.yml")
+          workflow.unlink(missing_ok=True)
+
+      - name: Commit patched source
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/lib/image-generator.ts src/lib/animated-canvas-renderer.ts src/lib/unicode-fonts.ts .github/workflows/apply-unicode-font-fix.yml
+          if git diff --cached --quiet; then
+            echo "No changes to commit"
+            exit 0
+          fi
+          git commit -m "fix: support Unicode text in Satori rendering"
+          git push origin HEAD:fix/unicode-font-fallback
