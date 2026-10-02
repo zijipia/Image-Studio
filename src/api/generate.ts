@@ -1,6 +1,6 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
-import type { AnyGenerateRequest } from "../src/lib/types";
-import { dispatchGenerateImage } from "../src/lib/image-generator";
+import type { AnyGenerateRequest } from "../lib/types";
+import { dispatchGenerateImage } from "../lib/image-generator";
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== "POST") {

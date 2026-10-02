@@ -113,7 +113,15 @@ function loadFonts() {
   if (cachedFonts) return cachedFonts;
 
   const fontDir = path.resolve(process.cwd(), "public/fonts");
-  const regularLatin = fs.readFileSync(path.join(fontDir, "Roboto-Regular.ttf"));
+  // Keep the API usable in deployments where only the bundled font assets exist.
+  // Roboto-Regular.ttf is not part of this project; use the available Roboto medium
+  // face as the Latin fallback instead of failing the whole function with ENOENT.
+  const regularLatinPath = path.join(fontDir, "Roboto-Regular.ttf");
+  const regularLatin = fs.readFileSync(
+    fs.existsSync(regularLatinPath)
+      ? regularLatinPath
+      : path.join(fontDir, "Roboto-Medium-Latin.ttf")
+  );
   const regularVn = fs.readFileSync(path.join(fontDir, "Roboto-Vietnamese.ttf"));
   const mediumLatin = fs.readFileSync(path.join(fontDir, "Roboto-Medium-Latin.ttf"));
   const mediumVn = fs.readFileSync(path.join(fontDir, "Roboto-Medium-Vn.ttf"));
