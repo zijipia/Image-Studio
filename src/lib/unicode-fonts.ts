@@ -9,9 +9,9 @@ type SatoriFont = {
 /**
  * Font families keyed by Satori language codes.
  *
- * Satori can return multiple codes for ambiguous Han text, e.g.
- * zh-CN|ja-JP|zh-TW|zh-HK. We intentionally keep all candidates instead
- * of guessing the script from code points ourselves.
+ * Satori currently does not classify Vietnamese as a dedicated locale in all
+ * versions, so the resolver below also recognizes Vietnamese code points when
+ * Satori reports `unknown`.
  */
 const LANGUAGE_FONTS: Record<string, string> = {
   "ja-JP": "Noto Sans JP",
@@ -39,6 +39,7 @@ const LANGUAGE_FONTS: Record<string, string> = {
   "ru-RU": "Noto Sans",
   "uk-UA": "Noto Sans",
   "el-GR": "Noto Sans",
+  "vi": "Noto Sans",
   "vi-VN": "Noto Sans",
   "devanagari": "Noto Sans Devanagari",
 };
@@ -46,24 +47,44 @@ const LANGUAGE_FONTS: Record<string, string> = {
 type FontSource = {
   family: string;
   language: string;
+  requestText?: string;
 };
 
 const fontCache = new Map<string, Promise<SatoriFont[] | null>>();
 
+// Google Fonts separates Vietnamese into its own glyph set. Include the full
+// Vietnamese alphabet/marks in the request so a tiny segment such as `ỳ`,
+// `ượ`, or `ệ` cannot accidentally receive a Latin-only subset.
+const VIETNAMESE_GLYPHS =
+  "ĂăÂâĐđÊêÔôƠơƯư ÁáÀàẢảÃãẠạĂắằẳẵặÂấầẩẫậÊếềểễệÔốồổỗộƠớờởỡợƯứừửữự " +
+  "ỲỳÝýỶỷỸỹỴỵ";
+
+function normalizeLanguageCode(code: string): string | null {
+  const primary = code.trim().split("|")[0];
+  if (LANGUAGE_FONTS[primary]) return primary;
+
+  const base = primary.toLowerCase().replace("_", "-").split("-")[0];
+  if (base === "vi") return "vi-VN";
+  return null;
+}
+
+function containsVietnamese(text: string): boolean {
+  // Vietnamese precomposed letters live mainly in U+1EA0..U+1EF9, with a few
+  // letters/marks in Latin Extended-A and combining-mark ranges.
+  return /[\u0102\u0103\u0110\u0111\u0128\u0129\u0168\u0169\u01A0\u01A1\u01AF\u01B0\u0300-\u0303\u0306\u031B\u0323\u1EA0-\u1EF9]/u.test(
+    text,
+  );
+}
+
 /**
- * Satori supports TTF/OTF/WOFF, but not WOFF2. Ask Google Fonts for a
- * compatible source and reject a response that only contains WOFF2.
+ * Google Fonts is requested with an old UA so it returns TTF/OTF/WOFF rather
+ * than WOFF2, which Satori does not support.
  */
 async function loadGoogleFont(family: string, text: string): Promise<Buffer> {
   const params = new URLSearchParams({ family, text });
   const cssResponse = await fetch(
     `https://fonts.googleapis.com/css2?${params.toString()}`,
-    {
-      headers: {
-        // Google Fonts uses UA negotiation. This UA returns legacy TTF sources.
-        "User-Agent": "Mozilla/4.0",
-      },
-    },
+    { headers: { "User-Agent": "Mozilla/4.0" } },
   );
 
   if (!cssResponse.ok) {
@@ -77,7 +98,6 @@ async function loadGoogleFont(family: string, text: string): Promise<Buffer> {
     ),
   ];
   const url = sources[0]?.[1];
-
   if (!url) {
     throw new Error(`No Satori-compatible font source returned for ${family}`);
   }
@@ -86,17 +106,16 @@ async function loadGoogleFont(family: string, text: string): Promise<Buffer> {
   if (!fontResponse.ok) {
     throw new Error(`Google Fonts font request failed: ${fontResponse.status}`);
   }
-
   return Buffer.from(await fontResponse.arrayBuffer());
 }
 
 /**
  * Implementation of Satori's loadAdditionalAsset(code, segment) contract.
  *
- * Do not infer a language from the segment here. Satori has already detected
- * the language and deliberately supplies every candidate locale needed for
- * ambiguous characters. We simply resolve each code to its font family and
- * return FontOptions, just like Satori's own playground/test implementation.
+ * For normal locales we trust Satori's detected language code. Vietnamese is
+ * the explicit exception: Satori may report `unknown`, while the supplied
+ * text still contains Vietnamese Extended glyphs that are absent from the
+ * bundled Roboto subset.
  */
 export async function loadSatoriAdditionalAsset(
   languageCode: string,
@@ -106,31 +125,50 @@ export async function loadSatoriAdditionalAsset(
 
   const sources: FontSource[] = [];
   const seen = new Set<string>();
+  const addSource = (language: string, family: string, requestText = text) => {
+    const key = `${language}:${family}`;
+    if (seen.has(key)) return;
+    seen.add(key);
+    sources.push({ family, language, requestText });
+  };
 
-  for (const language of languageCode
+  for (const rawLanguage of languageCode
     .split("|")
     .map((code) => code.trim())
     .filter(Boolean)) {
+    const language = normalizeLanguageCode(rawLanguage) ?? rawLanguage;
     const family = LANGUAGE_FONTS[language];
-    if (!family) continue;
+    if (family) {
+      addSource(
+        language,
+        family,
+        language === "vi" || language === "vi-VN"
+          ? `${VIETNAMESE_GLYPHS} ${text}`
+          : text,
+      );
+    }
+  }
 
-    const key = `${language}:${family}`;
-    if (seen.has(key)) continue;
-    seen.add(key);
-    sources.push({ family, language });
+  // Satori versions that do not expose Vietnamese in detectLanguageCode report
+  // these characters as `unknown`. Do the minimum content-based detection
+  // needed to recover the missing Vietnamese glyphs.
+  if (containsVietnamese(text)) {
+    addSource("vi-VN", "Noto Sans", `${VIETNAMESE_GLYPHS} ${text}`);
   }
 
   if (!sources.length) return null;
 
-  const cacheKey = `${languageCode}:${text}`;
+  const cacheKey = sources
+    .map(({ language, family, requestText }) => `${language}:${family}:${requestText}`)
+    .join("|");
   const cached = fontCache.get(cacheKey);
   if (cached) return cached;
 
   const pending = Promise.all(
-    sources.map(async ({ family, language }) => {
-      const data = await loadGoogleFont(family, text);
+    sources.map(async ({ family, language, requestText }) => {
+      const data = await loadGoogleFont(family, requestText ?? text);
       const safeLanguage = language.replace(/[^a-zA-Z0-9-]/g, "_");
-      const name = `ImageStudio-${safeLanguage}-${hashText(text)}`;
+      const name = `ImageStudio-${safeLanguage}-${hashText(requestText ?? text)}`;
 
       return [
         {
