@@ -2,6 +2,7 @@ import fs from "fs";
 import path from "path";
 import satori from "satori";
 import sharp from "sharp";
+import { loadSatoriAdditionalAsset } from "./unicode-fonts.js";
 import type {
   SongResult,
   ProfileData,
@@ -680,6 +681,7 @@ export async function generateSongImage(request: {
     width: CANVAS_WIDTH,
     height,
     fonts,
+    loadAdditionalAsset: loadSatoriAdditionalAsset,
   });
 
   const png = await sharp(Buffer.from(svg)).png().toBuffer();
@@ -909,6 +911,7 @@ export async function generateProfileImage(data: ProfileData): Promise<{ png: Bu
     width: PROFILE_WIDTH,
     height: PROFILE_HEIGHT,
     fonts,
+    loadAdditionalAsset: loadSatoriAdditionalAsset,
   });
 
   const png = await sharp(Buffer.from(svg)).png().toBuffer();
@@ -1476,6 +1479,7 @@ export async function generateLeaderboardImage(data: LeaderboardData): Promise<{
     width: LEADERBOARD_WIDTH,
     height,
     fonts,
+    loadAdditionalAsset: loadSatoriAdditionalAsset,
   });
 
   const png = await sharp(Buffer.from(svg)).png().toBuffer();
@@ -1623,6 +1627,7 @@ export async function generateQuoteImage(data: QuoteData): Promise<{ png: Buffer
     width: QUOTE_WIDTH,
     height: QUOTE_HEIGHT,
     fonts,
+    loadAdditionalAsset: loadSatoriAdditionalAsset,
   });
 
   const png = await sharp(Buffer.from(svg)).png().toBuffer();
@@ -1781,6 +1786,7 @@ export async function generateCustomCanvasImage(data: CustomCanvasData): Promise
     width,
     height,
     fonts,
+    loadAdditionalAsset: loadSatoriAdditionalAsset,
   });
 
   const png = await sharp(Buffer.from(svg)).png().toBuffer();
