@@ -69,17 +69,59 @@ async function animatedImageToDataUri(url: string, timeMs: number, targetWidth: 
 }
 
 async function renderElement(element: CustomElement): Promise<any> {
-  const base: any = { position: "absolute", left: px(element.x), top: px(element.y), width: px(element.width), height: px(element.height), opacity: element.opacity ?? 1, zIndex: element.zIndex ?? 0, boxSizing: "border-box", overflow: "hidden" };
-  if (element.type === "text" || element.type === "badge") return { type: "div", props: { style: { ...base, display: "flex", alignItems: "center", justifyContent: element.textAlign === "center" ? "center" : element.textAlign === "right" ? "flex-end" : "flex-start", color: element.color ?? "#fff", background: element.type === "badge" ? element.backgroundColor : undefined, border: element.border, borderRadius: px(element.borderRadius), fontSize: px(element.fontSize, 24), fontWeight: element.fontWeight ?? 400, lineHeight: 1.2, whiteSpace: "pre-wrap", padding: element.type === "badge" ? "0 10px" : undefined }, children: element.content ?? "" } };
+  const base: any = {
+    position: "absolute",
+    left: px(element.x),
+    top: px(element.y),
+    width: px(element.width),
+    height: px(element.height),
+    opacity: element.opacity ?? 1,
+    zIndex: element.zIndex ?? 0,
+    boxSizing: "border-box",
+    overflow: "hidden",
+  };
+
+  if (element.type === "text" || element.type === "badge") {
+    const style: Record<string, unknown> = {
+      ...base,
+      display: "flex",
+      alignItems: "center",
+      justifyContent: element.textAlign === "center" ? "center" : element.textAlign === "right" ? "flex-end" : "flex-start",
+      color: element.color ?? "#fff",
+      borderRadius: px(element.borderRadius),
+      fontSize: px(element.fontSize, 24),
+      fontWeight: element.fontWeight ?? 400,
+      lineHeight: 1.2,
+      whiteSpace: "pre-wrap",
+    };
+    if (element.type === "badge") {
+      if (element.backgroundColor) style.background = element.backgroundColor;
+      if (element.border) style.border = element.border;
+      style.padding = "0 10px";
+    } else if (element.border) {
+      style.border = element.border;
+    }
+    return { type: "div", props: { style, children: element.content ?? "" } };
+  }
+
   if (element.type === "image" || element.type === "avatar") {
     const src = await imageToDataUri(element.imageUrl ?? "", Math.max(32, Math.round(Math.max(element.width, element.height))));
-    return { type: "img", props: { src, width: element.width, height: element.height, style: { ...base, objectFit: "cover", borderRadius: px(element.borderRadius), border: element.border } } };
+    const style: Record<string, unknown> = { ...base, objectFit: "cover", borderRadius: px(element.borderRadius) };
+    if (element.border) style.border = element.border;
+    return { type: "img", props: { src, width: element.width, height: element.height, style } };
   }
+
   if (element.type === "progress") {
     const percent = Math.max(0, Math.min(100, element.progressPercent ?? 0));
-    return { type: "div", props: { style: { ...base, background: element.backgroundColor ?? "#27272a", borderRadius: px(element.borderRadius), border: element.border }, children: [{ type: "div", props: { style: { width: `${percent}%`, height: "100%", background: element.progressColor ?? "#a855f7", borderRadius: px(element.borderRadius) } } }] } };
+    const style: Record<string, unknown> = { ...base, background: element.backgroundColor ?? "#27272a", borderRadius: px(element.borderRadius) };
+    if (element.border) style.border = element.border;
+    return { type: "div", props: { style, children: [{ type: "div", props: { style: { width: `${percent}%`, height: "100%", background: element.progressColor ?? "#a855f7", borderRadius: px(element.borderRadius) } } }] } };
   }
-  return { type: "div", props: { style: { ...base, background: element.backgroundColor, border: element.border, borderRadius: px(element.borderRadius) } } };
+
+  const style: Record<string, unknown> = { ...base, borderRadius: px(element.borderRadius) };
+  if (element.backgroundColor) style.background = element.backgroundColor;
+  if (element.border) style.border = element.border;
+  return { type: "div", props: { style } };
 }
 
 export async function renderCustomCanvasSvg(canvas: CustomCanvasData, timeMs = 0): Promise<Buffer> {
