@@ -24,6 +24,7 @@ function loadFonts() {
 }
 
 const px = (value: number | undefined, fallback = 0) => `${value ?? fallback}px`;
+const safeBackground = (value: string | undefined) => value?.trim() || "#000";
 
 async function getAnimatedSource(url: string) {
   let source = animatedSourceCache.get(url);
@@ -136,7 +137,7 @@ export async function renderCustomCanvasSvg(canvas: CustomCanvasData, timeMs = 0
   }
   const elements = await Promise.all([...canvas.elements].sort((a, b) => (a.zIndex ?? 0) - (b.zIndex ?? 0)).map(renderElement));
   children.push(...elements);
-  const tree = { type: "div", props: { style: { position: "relative", display: "flex", width: px(canvas.width), height: px(canvas.height), overflow: "hidden", background: canvas.background }, children } };
+  const tree = { type: "div", props: { style: { position: "relative", display: "flex", width: px(canvas.width), height: px(canvas.height), overflow: "hidden", background: safeBackground(canvas.background) }, children } };
   const svg = await satori(tree as any, { width: canvas.width, height: canvas.height, fonts: loadFonts() });
   return Buffer.from(svg);
 }
