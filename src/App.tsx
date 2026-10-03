@@ -6,6 +6,7 @@ import type {
   LeaderboardData,
   QuoteData,
   AnyGenerateRequest,
+  ParticleConfig,
 } from "./lib/types";
 import {
   sampleSongs,
@@ -120,6 +121,12 @@ export default function App() {
   const [leaderboardData, setLeaderboardData] = useState<LeaderboardData>(defaultLeaderboardData);
   const [quoteData, setQuoteData] = useState<QuoteData>(defaultQuoteData);
 
+  // Particle System state for card generators
+  const [songParticles, setSongParticles] = useState<ParticleConfig | undefined>(undefined);
+  const [profileParticles, setProfileParticles] = useState<ParticleConfig | undefined>(undefined);
+  const [leaderboardParticles, setLeaderboardParticles] = useState<ParticleConfig | undefined>(undefined);
+  const [quoteParticles, setQuoteParticles] = useState<ParticleConfig | undefined>(undefined);
+
   const [isGenerating, setIsGenerating] = useState<boolean>(false);
   const [lastBlob, setLastBlob] = useState<Blob | null>(null);
   const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
@@ -145,10 +152,23 @@ export default function App() {
           setIsGenerating(false);
           return;
         }
-        payload = { type: "song", title: songTitle, items: songs, layout: songLayout };
+        payload = {
+          type: "song",
+          title: songTitle,
+          items: songs,
+          layout: songLayout,
+          particleConfig: songParticles,
+        };
         defaultFilename = `${(songTitle || "song-search").replace(/[/\\?%*:|"<>]/g, "-")}.png`;
       } else if (activeMode === "profile") {
-        payload = { type: "profile", data: profileData };
+        payload = {
+          type: "profile",
+          data: {
+            ...profileData,
+            particleConfig: profileParticles,
+          },
+          particleConfig: profileParticles,
+        };
         defaultFilename = `${profileData.username || "profile"}-rank.png`;
       } else if (activeMode === "leaderboard") {
         if (leaderboardData.items.length === 0) {
@@ -156,10 +176,24 @@ export default function App() {
           setIsGenerating(false);
           return;
         }
-        payload = { type: "leaderboard", data: leaderboardData };
+        payload = {
+          type: "leaderboard",
+          data: {
+            ...leaderboardData,
+            particleConfig: leaderboardParticles,
+          },
+          particleConfig: leaderboardParticles,
+        };
         defaultFilename = "leaderboard.png";
       } else if (activeMode === "quote") {
-        payload = { type: "quote", data: quoteData };
+        payload = {
+          type: "quote",
+          data: {
+            ...quoteData,
+            particleConfig: quoteParticles,
+          },
+          particleConfig: quoteParticles,
+        };
         defaultFilename = `${quoteData.author || "quote"}.png`;
       } else {
         payload = {
@@ -210,7 +244,19 @@ export default function App() {
         setIsGenerating(false);
       }
     },
-    [activeMode, songTitle, songs, songLayout, profileData, leaderboardData, quoteData]
+    [
+      activeMode,
+      songTitle,
+      songs,
+      songLayout,
+      songParticles,
+      profileData,
+      profileParticles,
+      leaderboardData,
+      leaderboardParticles,
+      quoteData,
+      quoteParticles,
+    ]
   );
 
   return (
@@ -504,6 +550,8 @@ export default function App() {
                     onGenerate={() => handleGenerate()}
                     isGenerating={isGenerating}
                     lastGeneratedBlob={lastBlob}
+                    particleConfig={songParticles}
+                    onParticleConfigChange={setSongParticles}
                   />
                 )}
 
@@ -513,6 +561,8 @@ export default function App() {
                     onGenerate={() => handleGenerate()}
                     isGenerating={isGenerating}
                     lastGeneratedBlob={lastBlob}
+                    particleConfig={profileParticles}
+                    onParticleConfigChange={setProfileParticles}
                   />
                 )}
 
@@ -522,6 +572,8 @@ export default function App() {
                     onGenerate={() => handleGenerate()}
                     isGenerating={isGenerating}
                     lastGeneratedBlob={lastBlob}
+                    particleConfig={leaderboardParticles}
+                    onParticleConfigChange={setLeaderboardParticles}
                   />
                 )}
 
@@ -531,6 +583,8 @@ export default function App() {
                     onGenerate={() => handleGenerate()}
                     isGenerating={isGenerating}
                     lastGeneratedBlob={lastBlob}
+                    particleConfig={quoteParticles}
+                    onParticleConfigChange={setQuoteParticles}
                   />
                 )}
               </div>

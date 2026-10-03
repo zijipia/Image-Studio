@@ -100,6 +100,7 @@ export function parseIStudioFile(fileContent: string): {
       height: Number(parsed.canvas?.height) || 280,
       background: parsed.canvas?.background || "#090614",
       backgroundImageUrl: parsed.canvas?.backgroundImageUrl,
+      particleSystem: parsed.canvas?.particleSystem,
       elements: Array.isArray(parsed.canvas?.elements)
         ? parsed.canvas.elements
         : Array.isArray(parsed.elements)

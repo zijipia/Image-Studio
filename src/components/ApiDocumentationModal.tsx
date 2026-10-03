@@ -13,6 +13,7 @@ import {
   Terminal,
   ExternalLink,
   BookOpen,
+  Sparkles,
 } from "lucide-react";
 
 interface ApiDocumentationModalProps {
@@ -20,7 +21,7 @@ interface ApiDocumentationModalProps {
   onClose: () => void;
 }
 
-type DocSection = "overview" | "song" | "profile" | "leaderboard" | "quote" | "animation" | "stats";
+type DocSection = "overview" | "song" | "profile" | "leaderboard" | "quote" | "animation" | "particles" | "stats";
 type CodeLang = "curl" | "python" | "nodejs" | "discord";
 
 export function ApiDocumentationModal({ isOpen, onClose }: ApiDocumentationModalProps) {
@@ -87,7 +88,8 @@ export function ApiDocumentationModal({ isOpen, onClose }: ApiDocumentationModal
               { id: "leaderboard", label: "3. Guild Leaderboard", icon: Trophy, color: "text-amber-400" },
               { id: "quote", label: "4. Quote Card", icon: Quote, color: "text-indigo-400" },
               { id: "animation", label: "5. Animation & Frame", icon: Film, color: "text-fuchsia-400" },
-              { id: "stats", label: "6. Stats Counter", icon: Terminal, color: "text-emerald-400" },
+              { id: "particles", label: "6. Particle System", icon: Sparkles, color: "text-amber-400" },
+              { id: "stats", label: "7. Stats Counter", icon: Terminal, color: "text-emerald-400" },
             ].map((sec) => {
               const Icon = sec.icon;
               const isSelected = activeSection === sec.id;
@@ -959,6 +961,255 @@ async def on_member_join(member):
                   onCopy={(key, text) => copyToClipboard(text, key)}
                   copiedKey={copiedKey}
                   blockKey="animation"
+                />
+              </div>
+            )}
+
+            {/* SECTION: PARTICLE SYSTEM */}
+            {activeSection === "particles" && (
+              <div className="space-y-5">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="text-base font-bold text-white flex items-center gap-2">
+                      <Sparkles className="h-5 w-5 text-amber-400" />
+                      Particle System Architecture & Presets
+                    </h3>
+                    <p className="text-xs text-slate-400">
+                      Hệ thống mô phỏng hạt chuyển động thời gian thực (60fps DOM/Canvas) và render chính xác từng frame trên server (Satori/Sharp).
+                    </p>
+                  </div>
+                  <span className="rounded-full bg-amber-500/20 px-2.5 py-1 text-[11px] font-mono font-medium text-amber-300 border border-amber-500/30">
+                    6 Presets · Deterministic Physics
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="rounded-xl border border-white/10 bg-black/40 p-4 space-y-2">
+                    <span className="text-xs font-semibold text-white">Cấu trúc thuộc tính Particle:</span>
+                    <pre className="font-mono text-[11px] text-amber-300/90 leading-relaxed bg-black/50 p-3 rounded-lg border border-white/5">
+{`Particle
+├── Count:      Số lượng hạt (5 - 300)
+├── Size:       Kích thước base (2 - 50px)
+├── Speed:      Vận tốc bay (0 - 600px/s)
+├── Direction:  Góc bắn (0 - 360°, 270=Lên, 90=Xuống)
+├── Spread:     Góc phân tán (0 - 360°)
+├── Gravity:    Trọng lực (+ Rơi, - Bốc lên, 0 Lơ lửng)
+├── Opacity:    Độ trong suốt cơ bản (0.1 - 1.0)
+├── Lifetime:   Tuổi thọ vòng lặp hạt (0.5 - 10s)
+└── Color:      Màu sắc chính (Hex)`}
+                    </pre>
+                  </div>
+
+                  <div className="rounded-xl border border-white/10 bg-black/40 p-4 space-y-2">
+                    <span className="text-xs font-semibold text-white">6 Presets tích hợp sẵn:</span>
+                    <div className="grid grid-cols-2 gap-2 text-xs">
+                      <div className="p-2 rounded-lg bg-white/5 border border-white/5">
+                        <span className="font-bold text-amber-300 block">✨ Spark</span>
+                        <span className="text-[10px] text-slate-400">Tia lửa lấp lánh rực rỡ vàng kim</span>
+                      </div>
+                      <div className="p-2 rounded-lg bg-white/5 border border-white/5">
+                        <span className="font-bold text-pink-300 block">🌸 Petals</span>
+                        <span className="text-[10px] text-slate-400">Cánh hoa anh đào rơi lãng mạn</span>
+                      </div>
+                      <div className="p-2 rounded-lg bg-white/5 border border-white/5">
+                        <span className="font-bold text-sky-300 block">❄ Snow</span>
+                        <span className="text-[10px] text-slate-400">Bông tuyết trắng bay êm đềm</span>
+                      </div>
+                      <div className="p-2 rounded-lg bg-white/5 border border-white/5">
+                        <span className="font-bold text-orange-400 block">🔥 Fire</span>
+                        <span className="text-[10px] text-slate-400">Tàn than lửa đỏ bốc lên bập bùng</span>
+                      </div>
+                      <div className="p-2 rounded-lg bg-white/5 border border-white/5">
+                        <span className="font-bold text-purple-300 block">💫 Stars</span>
+                        <span className="text-[10px] text-slate-400">Ngôi sao huyền ảo lơ lửng</span>
+                      </div>
+                      <div className="p-2 rounded-lg bg-white/5 border border-white/5">
+                        <span className="font-bold text-fuchsia-300 block">🎵 Music</span>
+                        <span className="text-[10px] text-slate-400">Nốt nhạc bay theo giai điệu neon</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="rounded-xl border border-white/10 bg-black/40 p-4 space-y-2">
+                  <span className="text-xs font-semibold text-white">Cách truyền ParticleConfig vào API:</span>
+                  <p className="text-xs text-slate-400">
+                    Trong bất kỳ request nào (Song, Profile, Leaderboard, Quote, hoặc Layer <code>type: "particle"</code> trong Custom Animation), bạn có thể kèm trường <code>particleConfig</code>:
+                  </p>
+                  <pre className="font-mono text-[11px] text-purple-300 bg-black/60 p-3 rounded-lg border border-white/5 overflow-x-auto">
+{`"particleConfig": {
+  "preset": "spark",       // "spark" | "petals" | "snow" | "fire" | "stars" | "music"
+  "count": 60,
+  "size": 8,
+  "speed": 160,
+  "direction": 270,
+  "spread": 360,
+  "gravity": 35,
+  "opacity": 0.95,
+  "lifetime": 1.8,
+  "color": "#fbbf24",
+  "shape": "spark"
+}`}
+                  </pre>
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-semibold text-slate-300">Code Examples: Render Card với Particle Effect</span>
+                  <div className="flex items-center rounded-lg bg-black/40 border border-white/10 p-0.5 text-[11px]">
+                    {(["curl", "nodejs", "python", "discord"] as CodeLang[]).map((l) => (
+                      <button
+                        key={l}
+                        onClick={() => setCodeLang(l)}
+                        className={`px-2.5 py-1 rounded font-mono uppercase transition ${
+                          codeLang === l ? "bg-purple-600 text-white font-bold" : "text-slate-400 hover:text-white"
+                        }`}
+                      >
+                        {l}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <CodeBlock
+                  lang={codeLang}
+                  curl={`curl -X POST ${currentOrigin}/api/generate \\
+  -H "Content-Type: application/json" \\
+  -H "Accept: image/png" \\
+  -d '{
+    "type": "profile",
+    "data": {
+      "username": "Nightcore",
+      "balance": "85,400 xu",
+      "avatar": "https://i.pravatar.cc/180",
+      "level": 42,
+      "currentXp": 8200,
+      "requiredXp": 10000,
+      "rank": "Grandmaster",
+      "theme": "cyber-neon",
+      "particleConfig": {
+        "preset": "spark",
+        "count": 60,
+        "size": 8,
+        "speed": 160,
+        "direction": 270,
+        "spread": 360,
+        "gravity": 35,
+        "opacity": 0.95,
+        "lifetime": 1.8,
+        "color": "#38bdf8",
+        "shape": "spark"
+      }
+    }
+  }' \\
+  --output profile-spark.png`}
+                  python={`import requests
+
+payload = {
+    "type": "profile",
+    "data": {
+        "username": "Nightcore",
+        "balance": "85,400 xu",
+        "avatar": "https://i.pravatar.cc/180",
+        "level": 42,
+        "currentXp": 8200,
+        "requiredXp": 10000,
+        "rank": "Grandmaster",
+        "theme": "cyber-neon",
+        "particleConfig": {
+            "preset": "spark",
+            "count": 60,
+            "size": 8,
+            "speed": 160,
+            "direction": 270,
+            "spread": 360,
+            "gravity": 35,
+            "opacity": 0.95,
+            "lifetime": 1.8,
+            "color": "#38bdf8",
+            "shape": "spark"
+        }
+    }
+}
+
+res = requests.post("${currentOrigin}/api/generate", json=payload)
+with open("profile-spark.png", "wb") as f:
+    f.write(res.content)`}
+                  nodejs={`const payload = {
+  type: "profile",
+  data: {
+    username: "Nightcore",
+    balance: "85,400 xu",
+    avatar: "https://i.pravatar.cc/180",
+    level: 42,
+    currentXp: 8200,
+    requiredXp: 10000,
+    rank: "Grandmaster",
+    theme: "cyber-neon",
+    particleConfig: {
+      preset: "spark",
+      count: 60,
+      size: 8,
+      speed: 160,
+      direction: 270,
+      spread: 360,
+      gravity: 35,
+      opacity: 0.95,
+      lifetime: 1.8,
+      color: "#38bdf8",
+      shape: "spark"
+    }
+  }
+};
+
+const res = await fetch("${currentOrigin}/api/generate", {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify(payload)
+});
+
+const buffer = await res.arrayBuffer();
+// Save to file or stream to client`}
+                  discord={`import discord
+import aiohttp
+import io
+
+async def send_spark_card(channel, member):
+    payload = {
+        "type": "profile",
+        "data": {
+            "username": member.name,
+            "balance": "50,000 xu",
+            "avatar": member.display_avatar.url,
+            "level": 30,
+            "currentXp": 4500,
+            "requiredXp": 5000,
+            "rank": "Diamond",
+            "theme": "cyber-neon",
+            "particleConfig": {
+                "preset": "spark",
+                "count": 60,
+                "size": 8,
+                "speed": 160,
+                "direction": 270,
+                "spread": 360,
+                "gravity": 35,
+                "opacity": 0.95,
+                "lifetime": 1.8,
+                "color": "#fbbf24",
+                "shape": "spark"
+            }
+        }
+    }
+
+    async with aiohttp.ClientSession() as session:
+        async with session.post("${currentOrigin}/api/generate", json=payload) as resp:
+            if resp.status == 200:
+                data = await resp.read()
+                file = discord.File(io.BytesIO(data), filename="profile.png")
+                await channel.send(file=file)`}
+                  onCopy={(key, text) => copyToClipboard(text, key)}
+                  copiedKey={copiedKey}
+                  blockKey="particles"
                 />
               </div>
             )}

@@ -1,6 +1,8 @@
 import React, { useRef, useState, useEffect } from "react";
-import type { QuoteData } from "../lib/types";
+import type { QuoteData, ParticleConfig } from "../lib/types";
 import { QUOTE_WIDTH, QUOTE_HEIGHT } from "../lib/constants";
+import { ParticleCanvas } from "./ParticleCanvas";
+import { ParticleOverlayButton } from "./ParticleOverlayButton";
 import { Download, Copy, Check, ExternalLink, Quote as QuoteIcon } from "lucide-react";
 
 interface QuotePreviewProps {
@@ -8,6 +10,8 @@ interface QuotePreviewProps {
   onGenerate: () => void;
   isGenerating: boolean;
   lastGeneratedBlob?: Blob | null;
+  particleConfig?: ParticleConfig;
+  onParticleConfigChange?: (config: ParticleConfig | undefined) => void;
 }
 
 export function QuotePreview({
@@ -15,6 +19,8 @@ export function QuotePreview({
   onGenerate,
   isGenerating,
   lastGeneratedBlob,
+  particleConfig,
+  onParticleConfigChange,
 }: QuotePreviewProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState<number>(0.75);
@@ -75,6 +81,14 @@ export function QuotePreview({
         </div>
 
         <div className="flex items-center gap-2">
+          {/* Particle System Ambience Selector */}
+          {onParticleConfigChange && (
+            <ParticleOverlayButton
+              particleConfig={particleConfig}
+              onChange={onParticleConfigChange}
+            />
+          )}
+
           {lastGeneratedBlob && (
             <button
               onClick={handleCopyBlob}
@@ -131,6 +145,17 @@ export function QuotePreview({
               boxShadow: "0 25px 60px -15px rgba(0, 0, 0, 0.9)",
             }}
           >
+            {/* Particle Ambience Overlay */}
+            {particleConfig && (
+              <ParticleCanvas
+                config={particleConfig}
+                width={QUOTE_WIDTH}
+                height={QUOTE_HEIGHT}
+                playing={true}
+                className="z-30"
+              />
+            )}
+
             {/* 1. Layout: Split Cinema (Original) */}
             {(!data.layout || data.layout === "split-portrait") && (
               <div className="relative h-full w-full bg-black overflow-hidden">

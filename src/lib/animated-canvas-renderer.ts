@@ -6,6 +6,7 @@ import type { CustomCanvasData, CustomElement } from "./types.js";
 import { imageToDataUri } from "./image-generator.js";
 import { loadSatoriAdditionalAsset } from "./unicode-fonts.js";
 import { computeElementTextShadow } from "./text-effects.js";
+import { computeParticles, renderParticlesToSatoriVNodes, createDefaultParticleConfig } from "./particle-system.js";
 
 let fonts: Array<{ name: string; data: Buffer; weight: 400 | 500; style: "normal" }> | null = null;
 const animatedSourceCache = new Map<string, Promise<Buffer>>();
@@ -71,7 +72,7 @@ async function animatedImageToDataUri(url: string, timeMs: number, targetWidth: 
   return `data:image/png;base64,${frame.toString("base64")}`;
 }
 
-async function renderElement(element: CustomElement): Promise<any> {
+async function renderElement(element: CustomElement, timeMs = 0): Promise<any> {
   const textShadow = computeElementTextShadow(element);
 
   const x = element.transform?.x ?? element.x;
@@ -144,6 +145,23 @@ async function renderElement(element: CustomElement): Promise<any> {
     return { type: "div", props: { style, children: [{ type: "div", props: { style: { width: `${percent}%`, height: "100%", background: element.progressColor ?? "#a855f7", borderRadius: px(element.borderRadius) } } }] } };
   }
 
+  if (element.type === "particle") {
+    const pConfig = element.particleConfig || createDefaultParticleConfig("spark");
+    const particles = computeParticles(pConfig, timeMs, { width, height });
+    const particleNodes = renderParticlesToSatoriVNodes(particles, { width, height });
+    return {
+      type: "div",
+      props: {
+        style: {
+          ...base,
+          overflow: "hidden",
+          pointerEvents: "none",
+        },
+        children: particleNodes,
+      },
+    };
+  }
+
   const style: Record<string, unknown> = { ...base, borderRadius: px(element.borderRadius) };
   if (element.backgroundColor) style.background = element.backgroundColor;
   if (element.border) style.border = element.border;
@@ -160,8 +178,34 @@ export async function renderCustomCanvasSvg(canvas: CustomCanvasData, timeMs = 0
       console.warn(`[animated-canvas-renderer] Failed background image ${canvas.backgroundImageUrl}:`, error);
     }
   }
-  const elements = await Promise.all([...canvas.elements].sort((a, b) => (a.zIndex ?? 0) - (b.zIndex ?? 0)).map(renderElement));
+  const elements = await Promise.all([...canvas.elements].sort((a, b) => (a.zIndex ?? 0) - (b.zIndex ?? 0)).map((el) => renderElement(el, timeMs)));
   children.push(...elements);
+
+  if (canvas.particleSystem) {
+    const globalParticles = computeParticles(canvas.particleSystem, timeMs, {
+      width: canvas.width,
+      height: canvas.height,
+    });
+    const globalNodes = renderParticlesToSatoriVNodes(globalParticles, {
+      width: canvas.width,
+      height: canvas.height,
+    });
+    children.push({
+      type: "div",
+      props: {
+        style: {
+          position: "absolute",
+          inset: 0,
+          width: px(canvas.width),
+          height: px(canvas.height),
+          pointerEvents: "none",
+          zIndex: 999,
+        },
+        children: globalNodes,
+      },
+    });
+  }
+
   const tree = { type: "div", props: { style: { position: "relative", display: "flex", width: px(canvas.width), height: px(canvas.height), overflow: "hidden", background: safeBackground(canvas.background) }, children } };
   const svg = await satori(tree as any, { width: canvas.width, height: canvas.height, fonts: loadFonts(), loadAdditionalAsset: loadSatoriAdditionalAsset });
   return Buffer.from(svg);

@@ -1,6 +1,8 @@
 import React, { useRef, useState, useEffect } from "react";
-import type { SongResult } from "../lib/types";
+import type { SongResult, ParticleConfig } from "../lib/types";
 import { calculateHeight, CANVAS_WIDTH } from "../lib/constants";
+import { ParticleCanvas } from "./ParticleCanvas";
+import { ParticleOverlayButton } from "./ParticleOverlayButton";
 import {
   Download,
   Copy,
@@ -16,6 +18,8 @@ interface ImagePreviewProps {
   onGenerate: () => void;
   isGenerating: boolean;
   lastGeneratedBlob?: Blob | null;
+  particleConfig?: ParticleConfig;
+  onParticleConfigChange?: (config: ParticleConfig | undefined) => void;
 }
 
 export function ImagePreview({
@@ -25,6 +29,8 @@ export function ImagePreview({
   onGenerate,
   isGenerating,
   lastGeneratedBlob,
+  particleConfig,
+  onParticleConfigChange,
 }: ImagePreviewProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [zoomMode, setZoomMode] = useState<"fit" | "50" | "75" | "100">("fit");
@@ -156,6 +162,14 @@ export function ImagePreview({
             </button>
           </div>
 
+          {/* Particle System Ambience Selector */}
+          {onParticleConfigChange && (
+            <ParticleOverlayButton
+              particleConfig={particleConfig}
+              onChange={onParticleConfigChange}
+            />
+          )}
+
           {/* Copy to clipboard */}
           {lastGeneratedBlob && (
             <button
@@ -224,6 +238,17 @@ export function ImagePreview({
                 boxShadow: "0 25px 60px -15px rgba(0, 0, 0, 0.8), 0 0 40px rgba(91, 0, 184, 0.2)",
               }}
             >
+              {/* Particle System Ambience Overlay */}
+              {particleConfig && (
+                <ParticleCanvas
+                  config={particleConfig}
+                  width={CANVAS_WIDTH}
+                  height={height}
+                  playing={true}
+                  className="z-30"
+                />
+              )}
+
               {/* Header */}
               <div className="flex h-[65px] flex-col items-center justify-center pt-2">
                 <h2

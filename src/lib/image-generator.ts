@@ -4,6 +4,7 @@ import satori from "satori";
 import sharp from "sharp";
 import { loadSatoriAdditionalAsset } from "./unicode-fonts.js";
 import { computeElementTextShadow } from "./text-effects.js";
+import { computeParticles, renderParticlesToSatoriVNodes, createDefaultParticleConfig } from "./particle-system.js";
 import type {
   SongResult,
   ProfileData,
@@ -605,7 +606,7 @@ export async function generateSongImage(request: {
     }));
   }
 
-  const element = {
+  const element: any = {
     type: "div",
     props: {
       style: {
@@ -676,6 +677,25 @@ export async function generateSongImage(request: {
       ],
     },
   };
+
+  if ((request as any).particleConfig) {
+    const particles = computeParticles((request as any).particleConfig, 0, { width: CANVAS_WIDTH, height });
+    const pNodes = renderParticlesToSatoriVNodes(particles, { width: CANVAS_WIDTH, height });
+    element.props.children.push({
+      type: "div",
+      props: {
+        style: {
+          position: "absolute",
+          inset: 0,
+          width: `${CANVAS_WIDTH}px`,
+          height: `${height}px`,
+          pointerEvents: "none",
+          zIndex: 999,
+        },
+        children: pNodes,
+      },
+    });
+  }
 
   const fonts = loadFonts();
   const svg = await satori(element as any, {
@@ -1935,6 +1955,25 @@ export async function generateProfileImage(data: ProfileData): Promise<{ png: Bu
     element = renderProfileRubyPoly(data, avatarUri, percent);
   }
 
+  if (data.particleConfig) {
+    const particles = computeParticles(data.particleConfig, 0, { width: PROFILE_WIDTH, height: PROFILE_HEIGHT });
+    const pNodes = renderParticlesToSatoriVNodes(particles, { width: PROFILE_WIDTH, height: PROFILE_HEIGHT });
+    element.props.children.push({
+      type: "div",
+      props: {
+        style: {
+          position: "absolute",
+          inset: 0,
+          width: `${PROFILE_WIDTH}px`,
+          height: `${PROFILE_HEIGHT}px`,
+          pointerEvents: "none",
+          zIndex: 999,
+        },
+        children: pNodes,
+      },
+    });
+  }
+
   const fonts = loadFonts();
   const svg = await satori(element as any, {
     width: PROFILE_WIDTH,
@@ -3152,7 +3191,7 @@ export async function generateLeaderboardImage(data: LeaderboardData): Promise<{
     ];
   }
 
-  const element = {
+  const element: any = {
     type: "div",
     props: {
       style: {
@@ -3168,6 +3207,25 @@ export async function generateLeaderboardImage(data: LeaderboardData): Promise<{
       children: [headerBanner, ...bodyElements],
     },
   };
+
+  if (data.particleConfig) {
+    const particles = computeParticles(data.particleConfig, 0, { width: LEADERBOARD_WIDTH, height });
+    const pNodes = renderParticlesToSatoriVNodes(particles, { width: LEADERBOARD_WIDTH, height });
+    element.props.children.push({
+      type: "div",
+      props: {
+        style: {
+          position: "absolute",
+          inset: 0,
+          width: `${LEADERBOARD_WIDTH}px`,
+          height: `${height}px`,
+          pointerEvents: "none",
+          zIndex: 999,
+        },
+        children: pNodes,
+      },
+    });
+  }
 
   const fonts = loadFonts();
   const svg = await satori(element as any, {
@@ -3865,6 +3923,25 @@ export async function generateQuoteImage(data: QuoteData): Promise<{ png: Buffer
     };
   }
 
+  if (data.particleConfig) {
+    const particles = computeParticles(data.particleConfig, 0, { width: QUOTE_WIDTH, height: QUOTE_HEIGHT });
+    const pNodes = renderParticlesToSatoriVNodes(particles, { width: QUOTE_WIDTH, height: QUOTE_HEIGHT });
+    element.props.children.push({
+      type: "div",
+      props: {
+        style: {
+          position: "absolute",
+          inset: 0,
+          width: `${QUOTE_WIDTH}px`,
+          height: `${QUOTE_HEIGHT}px`,
+          pointerEvents: "none",
+          zIndex: 999,
+        },
+        children: pNodes,
+      },
+    });
+  }
+
   const fonts = loadFonts();
   const svg = await satori(element as any, {
     width: QUOTE_WIDTH,
@@ -4004,6 +4081,23 @@ export async function generateCustomCanvasImage(data: CustomCanvasData): Promise
       };
     }
 
+    if (el.type === "particle") {
+      const pConfig = el.particleConfig || createDefaultParticleConfig("spark");
+      const particles = computeParticles(pConfig, 0, { width: el.width, height: el.height });
+      const particleNodes = renderParticlesToSatoriVNodes(particles, { width: el.width, height: el.height });
+      return {
+        type: "div",
+        props: {
+          style: {
+            ...baseStyle,
+            overflow: "hidden",
+            pointerEvents: "none",
+          },
+          children: particleNodes,
+        },
+      };
+    }
+
     // Default container / box
     return {
       type: "div",
@@ -4017,6 +4111,31 @@ export async function generateCustomCanvasImage(data: CustomCanvasData): Promise
       },
     };
   });
+
+  if (data.particleSystem) {
+    const globalParticles = computeParticles(data.particleSystem, 0, {
+      width,
+      height,
+    });
+    const globalNodes = renderParticlesToSatoriVNodes(globalParticles, {
+      width,
+      height,
+    });
+    renderedChildren.push({
+      type: "div",
+      props: {
+        style: {
+          position: "absolute",
+          inset: 0,
+          width: `${width}px`,
+          height: `${height}px`,
+          pointerEvents: "none",
+          zIndex: 999,
+        },
+        children: globalNodes,
+      },
+    });
+  }
 
   const rootElement = {
     type: "div",

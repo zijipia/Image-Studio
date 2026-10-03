@@ -3,6 +3,9 @@ import type { CustomCanvasData, CustomElement, CustomElementType, Transform } fr
 import { recordGeneratedImage } from "../lib/use-stats";
 import { TextShadowControlPanel } from "./TextShadowControlPanel";
 import { computeElementTextShadow, TEXT_SHADOW_PRESETS } from "../lib/text-effects";
+import { ParticleControlPanel } from "./ParticleControlPanel";
+import { ParticleCanvas } from "./ParticleCanvas";
+import { createDefaultParticleConfig } from "../lib/particle-system";
 import {
   Film,
   Play,
@@ -1116,10 +1119,10 @@ export function AnimationTimeline() {
     const base: CustomElement = {
       id,
       type,
-      x: 60,
-      y: 60,
-      width: type === "text" ? 360 : type === "badge" ? 140 : type === "progress" ? 400 : 140,
-      height: type === "text" ? 48 : type === "badge" ? 32 : type === "progress" ? 14 : 140,
+      x: type === "particle" ? 0 : 60,
+      y: type === "particle" ? 0 : 60,
+      width: type === "text" ? 360 : type === "badge" ? 140 : type === "progress" ? 400 : type === "particle" ? canvas.width : 140,
+      height: type === "text" ? 48 : type === "badge" ? 32 : type === "progress" ? 14 : type === "particle" ? canvas.height : 140,
       opacity: 1,
       zIndex: canvas.elements.length,
     };
@@ -1166,6 +1169,10 @@ export function AnimationTimeline() {
         backgroundColor: "rgba(255,255,255,0.06)",
         borderRadius: 16,
         border: "1px solid rgba(255,255,255,0.12)",
+      });
+    } else if (type === "particle") {
+      Object.assign(base, {
+        particleConfig: createDefaultParticleConfig("spark"),
       });
     }
 
@@ -2056,6 +2063,14 @@ export function AnimationTimeline() {
                 <Box className="h-3.5 w-3.5 text-indigo-400" />
                 <span>Box</span>
               </button>
+              <button
+                onClick={() => addElement("particle")}
+                className="col-span-2 flex items-center justify-center gap-1.5 rounded-lg border border-amber-500/30 bg-gradient-to-r from-amber-500/20 via-purple-500/20 to-rose-500/20 p-2 text-[11px] font-semibold text-amber-200 hover:border-amber-400 hover:text-white transition shadow-sm"
+                title="Thêm Layer hiệu ứng hạt chuyển động (Particle System)"
+              >
+                <Sparkles className="h-3.5 w-3.5 text-amber-400 animate-pulse" />
+                <span>+ Thêm Particle System</span>
+              </button>
             </div>
 
             {/* Elements list with Drag and Drop */}
@@ -2320,6 +2335,22 @@ export function AnimationTimeline() {
                                 background: e.progressColor || "#a855f7",
                                 borderRadius: (e.borderRadius ?? 999) * zoom,
                               }}
+                            />
+                          </div>
+                        ) : e.type === "particle" ? (
+                          <div
+                            className="h-full w-full relative overflow-hidden pointer-events-none"
+                            style={{
+                              borderRadius: (e.borderRadius ?? 0) * zoom,
+                              border: e.border,
+                            }}
+                          >
+                            <ParticleCanvas
+                              config={e.particleConfig || createDefaultParticleConfig("spark")}
+                              width={Math.round(e.width * zoom)}
+                              height={Math.round(e.height * zoom)}
+                              timeMs={time}
+                              playing={playing}
                             />
                           </div>
                         ) : (
@@ -3429,6 +3460,20 @@ export function AnimationTimeline() {
                       onChange={(patch) => updateCurrentElement(selectedElement.id, patch)}
                     />
                   )}
+                </div>
+              )}
+
+              {/* Particle System Properties */}
+              {selectedElement.type === "particle" && (
+                <div className="pt-1">
+                  <ParticleControlPanel
+                    config={selectedElement.particleConfig || createDefaultParticleConfig("spark")}
+                    onChange={(newConfig) => {
+                      updateCurrentElement(selectedElement.id, {
+                        particleConfig: newConfig,
+                      });
+                    }}
+                  />
                 </div>
               )}
 

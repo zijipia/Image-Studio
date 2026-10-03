@@ -1,7 +1,10 @@
+import type { ParticleConfig, ParticlePresetId, ParticleShape } from "./particle-system";
+export type { ParticleConfig, ParticlePresetId, ParticleShape };
+
 export type GeneratorType = "song" | "profile" | "leaderboard" | "quote" | "animated";
 
 export interface SongResult { index: number; avatar: string; displayName: string; time: string; source: string; author?: string; views?: string; }
-export interface SongGenerateRequest { type?: "song"; title: string; items: SongResult[]; layout?: "auto" | "list" | "grid" | "classic"; }
+export interface SongGenerateRequest { type?: "song"; title: string; items: SongResult[]; layout?: "auto" | "list" | "grid" | "classic"; particleConfig?: ParticleConfig; }
 
 export type ProfileTheme = "ruby-poly" | "cyber-neon" | "glass-minimal" | "gold-legend";
 export interface ProfileData {
@@ -15,8 +18,9 @@ export interface ProfileData {
   theme?: ProfileTheme;
   badge?: string;
   title?: string;
+  particleConfig?: ParticleConfig;
 }
-export interface ProfileGenerateRequest { type: "profile"; data: ProfileData; }
+export interface ProfileGenerateRequest { type: "profile"; data: ProfileData; particleConfig?: ParticleConfig; }
 
 export type LeaderboardLayout = "podium" | "compact-list" | "cyber-grid" | "minimal-cards";
 export interface LeaderboardItem { rank: number; username: string; handle: string; avatar: string; level: number; xp: number; }
@@ -26,8 +30,9 @@ export interface LeaderboardData {
   season?: string;
   items: LeaderboardItem[];
   layout?: LeaderboardLayout;
+  particleConfig?: ParticleConfig;
 }
-export interface LeaderboardGenerateRequest { type: "leaderboard"; data: LeaderboardData; }
+export interface LeaderboardGenerateRequest { type: "leaderboard"; data: LeaderboardData; particleConfig?: ParticleConfig; }
 
 export type QuoteLayout = "split-portrait" | "centered-minimal" | "modern-card" | "neon-cyber";
 export interface QuoteData {
@@ -37,10 +42,11 @@ export interface QuoteData {
   tag: string;
   avatar: string;
   layout?: QuoteLayout;
+  particleConfig?: ParticleConfig;
 }
-export interface QuoteGenerateRequest { type: "quote"; data: QuoteData; }
+export interface QuoteGenerateRequest { type: "quote"; data: QuoteData; particleConfig?: ParticleConfig; }
 
-export type CustomElementType = "text" | "image" | "avatar" | "badge" | "progress" | "box";
+export type CustomElementType = "text" | "image" | "avatar" | "badge" | "progress" | "box" | "particle";
 
 /**
  * Unified Transform system for canvas elements and animation keyframes.
@@ -93,11 +99,16 @@ export interface CustomElement {
   // Extended Typography
   letterSpacing?: number;
   lineHeight?: number;
+
+  // Particle System
+  particleConfig?: ParticleConfig;
 }
 export interface CustomCanvasData {
   title: string; width: number; height: number; background: string; elements: CustomElement[];
   /** Optional animated background image URL. GIF/APNG/WebP frames are sampled per output frame. */
   backgroundImageUrl?: string;
+  /** Optional global particle system overlay for the entire canvas */
+  particleSystem?: ParticleConfig;
 }
 export interface CustomGenerateRequest { type: "custom"; data: CustomCanvasData; }
 

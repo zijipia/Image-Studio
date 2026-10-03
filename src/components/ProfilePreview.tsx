@@ -1,6 +1,8 @@
 import React, { useRef, useState, useEffect } from "react";
-import type { ProfileData } from "../lib/types";
+import type { ProfileData, ParticleConfig } from "../lib/types";
 import { PROFILE_WIDTH, PROFILE_HEIGHT } from "../lib/constants";
+import { ParticleCanvas } from "./ParticleCanvas";
+import { ParticleOverlayButton } from "./ParticleOverlayButton";
 import { Download, Copy, Check, ExternalLink, User } from "lucide-react";
 
 interface ProfilePreviewProps {
@@ -8,6 +10,8 @@ interface ProfilePreviewProps {
   onGenerate: () => void;
   isGenerating: boolean;
   lastGeneratedBlob?: Blob | null;
+  particleConfig?: ParticleConfig;
+  onParticleConfigChange?: (config: ParticleConfig | undefined) => void;
 }
 
 export function ProfilePreview({
@@ -15,6 +19,8 @@ export function ProfilePreview({
   onGenerate,
   isGenerating,
   lastGeneratedBlob,
+  particleConfig,
+  onParticleConfigChange,
 }: ProfilePreviewProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState<number>(0.75);
@@ -175,6 +181,14 @@ export function ProfilePreview({
         </div>
 
         <div className="flex items-center gap-2">
+          {/* Particle System Ambience Selector */}
+          {onParticleConfigChange && (
+            <ParticleOverlayButton
+              particleConfig={particleConfig}
+              onChange={onParticleConfigChange}
+            />
+          )}
+
           {lastGeneratedBlob && (
             <button
               onClick={handleCopyBlob}
@@ -232,6 +246,17 @@ export function ProfilePreview({
               boxShadow: "0 25px 60px -15px rgba(0, 0, 0, 0.8)",
             }}
           >
+            {/* Particle Ambience Overlay */}
+            {particleConfig && (
+              <ParticleCanvas
+                config={particleConfig}
+                width={PROFILE_WIDTH}
+                height={PROFILE_HEIGHT}
+                playing={true}
+                className="z-30"
+              />
+            )}
+
             {/* 1. Ruby Poly (Classic Gaming Rank Card) */}
             {theme === "ruby-poly" && (
               <div

@@ -1,6 +1,8 @@
 import React, { useRef, useState, useEffect } from "react";
-import type { LeaderboardData } from "../lib/types";
+import type { LeaderboardData, ParticleConfig } from "../lib/types";
 import { LEADERBOARD_WIDTH, calculateLeaderboardHeight } from "../lib/constants";
+import { ParticleCanvas } from "./ParticleCanvas";
+import { ParticleOverlayButton } from "./ParticleOverlayButton";
 import { Download, Copy, Check, ExternalLink } from "lucide-react";
 
 interface LeaderboardPreviewProps {
@@ -8,6 +10,8 @@ interface LeaderboardPreviewProps {
   onGenerate: () => void;
   isGenerating: boolean;
   lastGeneratedBlob?: Blob | null;
+  particleConfig?: ParticleConfig;
+  onParticleConfigChange?: (config: ParticleConfig | undefined) => void;
 }
 
 export function LeaderboardPreview({
@@ -15,6 +19,8 @@ export function LeaderboardPreview({
   onGenerate,
   isGenerating,
   lastGeneratedBlob,
+  particleConfig,
+  onParticleConfigChange,
 }: LeaderboardPreviewProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState<number>(0.7);
@@ -84,6 +90,14 @@ export function LeaderboardPreview({
         </div>
 
         <div className="flex items-center gap-2">
+          {/* Particle System Ambience Selector */}
+          {onParticleConfigChange && (
+            <ParticleOverlayButton
+              particleConfig={particleConfig}
+              onChange={onParticleConfigChange}
+            />
+          )}
+
           {lastGeneratedBlob && (
             <button
               onClick={handleCopyBlob}
@@ -142,6 +156,17 @@ export function LeaderboardPreview({
               boxShadow: "0 25px 60px -15px rgba(0, 0, 0, 0.8)",
             }}
           >
+            {/* Particle Ambience Overlay */}
+            {particleConfig && (
+              <ParticleCanvas
+                config={particleConfig}
+                width={LEADERBOARD_WIDTH}
+                height={height}
+                playing={true}
+                className="z-30"
+              />
+            )}
+
             {/* 1. Server Header Banner */}
             <div className="mb-[16px] flex h-[76px] w-full items-center justify-between rounded-[14px] border border-white/8 bg-white/[0.04] px-4">
               <div className="flex items-center gap-3">
