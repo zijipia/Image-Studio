@@ -42,6 +42,20 @@ Image Studio provides a full-featured visual creation suite optimized for Discor
 
 ---
 
+## 🌐 Direct Page URLs & Routing
+
+All studios support dedicated, shareable, and direct URLs:
+- `/song` (or `/`): Song Search Card Studio
+- `/profile`: User Profile & Rank Card Studio
+- `/leaderboard`: Guild Leaderboard Studio
+- `/quote`: Stylized Quote Card Studio
+- `/custom`: Custom Freeform Canvas Studio
+- `/animation`: Multi-track Animation Studio (GIF & WebP)
+
+Supports HTML5 History API, deep linking, browser back/forward navigation, and opening in new tabs.
+
+---
+
 ## 🚀 Quick Start (Local Development)
 
 ### Prerequisites

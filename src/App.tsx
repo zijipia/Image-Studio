@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useEffect } from "react";
 import type {
   GeneratorType,
   SongResult,
@@ -41,16 +41,78 @@ import {
   Film,
 } from "lucide-react";
 
+export function getModeFromPath(pathname: string, search = ""): GeneratorType {
+  const clean = pathname.toLowerCase().replace(/\/+$/, "") || "/";
+  if (clean === "/animation" || clean === "/animated" || clean === "/timeline") return "animated";
+  if (clean === "/profile" || clean === "/rank") return "profile";
+  if (clean === "/leaderboard" || clean === "/leaderboards") return "leaderboard";
+  if (clean === "/quote" || clean === "/quotes") return "quote";
+  if (clean === "/custom" || clean === "/builder") return "custom";
+  if (clean === "/song" || clean === "/songs") return "song";
+
+  const params = new URLSearchParams(search);
+  const q = params.get("mode") || params.get("studio");
+  if (q === "animation" || q === "animated") return "animated";
+  if (q === "profile") return "profile";
+  if (q === "leaderboard") return "leaderboard";
+  if (q === "quote") return "quote";
+  if (q === "custom") return "custom";
+  if (q === "song") return "song";
+
+  return "song";
+}
+
+export function getPathFromMode(mode: GeneratorType): string {
+  switch (mode) {
+    case "animated":
+      return "/animation";
+    case "profile":
+      return "/profile";
+    case "leaderboard":
+      return "/leaderboard";
+    case "quote":
+      return "/quote";
+    case "custom":
+      return "/custom";
+    case "song":
+    default:
+      return "/song";
+  }
+}
+
 export default function App() {
   const [activeMode, setActiveMode] = useState<GeneratorType>(() => {
     if (typeof window !== "undefined") {
-      const p = new URLSearchParams(window.location.search);
-      if (p.get("studio") === "animation" || p.get("mode") === "animated") {
-        return "animated";
-      }
+      return getModeFromPath(window.location.pathname, window.location.search);
     }
     return "song";
   });
+
+  const navigateToMode = useCallback((mode: GeneratorType, updateHistory = true) => {
+    setActiveMode(mode);
+    setLastBlob(null);
+    if (updateHistory && typeof window !== "undefined") {
+      const target = getPathFromMode(mode);
+      if (window.location.pathname !== target) {
+        window.history.pushState({ mode }, "", target);
+      }
+    }
+  }, []);
+
+  const handleLinkClick = (e: React.MouseEvent<HTMLAnchorElement>, mode: GeneratorType) => {
+    if (e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return;
+    e.preventDefault();
+    navigateToMode(mode);
+  };
+
+  useEffect(() => {
+    const onPop = () => {
+      setActiveMode(getModeFromPath(window.location.pathname, window.location.search));
+      setLastBlob(null);
+    };
+    window.addEventListener("popstate", onPop);
+    return () => window.removeEventListener("popstate", onPop);
+  }, []);
 
   // State for all generators
   const [songTitle, setSongTitle] = useState<string>("Trending Top Hits");
@@ -175,54 +237,64 @@ export default function App() {
       {/* Top Bar Contract (3 zones) */}
       <header className="sticky top-0 z-40 flex h-16 items-center justify-between border-b border-white/8 bg-[#0c0918]/85 px-6 backdrop-blur-md lg:px-10">
         {/* Zone 1: Single text element wordmark */}
-        <div className="flex items-center gap-3">
-          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-tr from-purple-600 via-rose-500 to-indigo-500 text-white shadow-md shadow-purple-600/30">
+        <a
+          href="/song"
+          onClick={(e) => handleLinkClick(e, "song")}
+          className="flex items-center gap-3 cursor-pointer group"
+        >
+          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-tr from-purple-600 via-rose-500 to-indigo-500 text-white shadow-md shadow-purple-600/30 group-hover:scale-105 transition-transform">
             <Zap className="h-5 w-5" />
           </div>
-          <span className="text-lg font-bold tracking-tight text-white">
+          <span className="text-lg font-bold tracking-tight text-white group-hover:text-purple-200 transition-colors">
             Image Studio
           </span>
-        </div>
+        </a>
 
         {/* Zone 2: Navigation Links */}
         <nav className="hidden md:flex items-center gap-6 text-sm font-medium text-slate-300">
-          <button
-            onClick={() => setActiveMode("song")}
+          <a
+            href="/song"
+            onClick={(e) => handleLinkClick(e, "song")}
             className={`transition-colors ${activeMode === "song" ? "text-purple-400 font-semibold" : "hover:text-purple-300"}`}
           >
             Song Search
-          </button>
-          <button
-            onClick={() => setActiveMode("profile")}
+          </a>
+          <a
+            href="/profile"
+            onClick={(e) => handleLinkClick(e, "profile")}
             className={`transition-colors ${activeMode === "profile" ? "text-rose-400 font-semibold" : "hover:text-rose-300"}`}
           >
             Profile Card
-          </button>
-          <button
-            onClick={() => setActiveMode("leaderboard")}
+          </a>
+          <a
+            href="/leaderboard"
+            onClick={(e) => handleLinkClick(e, "leaderboard")}
             className={`transition-colors ${activeMode === "leaderboard" ? "text-amber-400 font-semibold" : "hover:text-amber-300"}`}
           >
             Leaderboard
-          </button>
-          <button
-            onClick={() => setActiveMode("quote")}
+          </a>
+          <a
+            href="/quote"
+            onClick={(e) => handleLinkClick(e, "quote")}
             className={`transition-colors ${activeMode === "quote" ? "text-indigo-400 font-semibold" : "hover:text-indigo-300"}`}
           >
             Quote Card
-          </button>
-          <button
-            onClick={() => setActiveMode("custom")}
+          </a>
+          <a
+            href="/custom"
+            onClick={(e) => handleLinkClick(e, "custom")}
             className={`transition-colors ${activeMode === "custom" ? "text-cyan-400 font-semibold" : "hover:text-cyan-300"}`}
           >
             Custom Studio
-          </button>
-          <button
-            onClick={() => setActiveMode("animated")}
+          </a>
+          <a
+            href="/animation"
+            onClick={(e) => handleLinkClick(e, "animated")}
             className={`flex items-center gap-1.5 transition-colors ${activeMode === "animated" ? "text-fuchsia-400 font-semibold" : "hover:text-fuchsia-300"}`}
           >
             <Film className="h-3.5 w-3.5" />
             <span>Animation Studio</span>
-          </button>
+          </a>
           <button
             onClick={() => setShowDocs(true)}
             className="hover:text-slate-100 transition-colors opacity-80"
@@ -254,11 +326,9 @@ export default function App() {
           {/* Mode Switcher Tabs */}
           <div className="flex flex-wrap items-center justify-between gap-4 border-b border-white/8 pb-4">
             <div className="flex flex-wrap items-center gap-2 p-1 rounded-xl bg-black/40 border border-white/10">
-              <button
-                onClick={() => {
-                  setActiveMode("song");
-                  setLastBlob(null);
-                }}
+              <a
+                href="/song"
+                onClick={(e) => handleLinkClick(e, "song")}
                 className={`flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-medium transition-all ${
                   activeMode === "song"
                     ? "bg-purple-600 text-white shadow-md shadow-purple-900/40 font-semibold"
@@ -267,13 +337,11 @@ export default function App() {
               >
                 <Music className="h-4 w-4" />
                 <span>Song Search</span>
-              </button>
+              </a>
 
-              <button
-                onClick={() => {
-                  setActiveMode("profile");
-                  setLastBlob(null);
-                }}
+              <a
+                href="/profile"
+                onClick={(e) => handleLinkClick(e, "profile")}
                 className={`flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-medium transition-all ${
                   activeMode === "profile"
                     ? "bg-rose-600 text-white shadow-md shadow-rose-900/40 font-semibold"
@@ -282,13 +350,11 @@ export default function App() {
               >
                 <User className="h-4 w-4" />
                 <span>Profile Card</span>
-              </button>
+              </a>
 
-              <button
-                onClick={() => {
-                  setActiveMode("leaderboard");
-                  setLastBlob(null);
-                }}
+              <a
+                href="/leaderboard"
+                onClick={(e) => handleLinkClick(e, "leaderboard")}
                 className={`flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-medium transition-all ${
                   activeMode === "leaderboard"
                     ? "bg-amber-600 text-white shadow-md shadow-amber-900/40 font-semibold"
@@ -297,13 +363,11 @@ export default function App() {
               >
                 <Trophy className="h-4 w-4" />
                 <span>Leaderboard</span>
-              </button>
+              </a>
 
-              <button
-                onClick={() => {
-                  setActiveMode("quote");
-                  setLastBlob(null);
-                }}
+              <a
+                href="/quote"
+                onClick={(e) => handleLinkClick(e, "quote")}
                 className={`flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-medium transition-all ${
                   activeMode === "quote"
                     ? "bg-indigo-600 text-white shadow-md shadow-indigo-900/40 font-semibold"
@@ -312,13 +376,11 @@ export default function App() {
               >
                 <Quote className="h-4 w-4" />
                 <span>Quote Card</span>
-              </button>
+              </a>
 
-              <button
-                onClick={() => {
-                  setActiveMode("custom");
-                  setLastBlob(null);
-                }}
+              <a
+                href="/custom"
+                onClick={(e) => handleLinkClick(e, "custom")}
                 className={`flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-medium transition-all ${
                   activeMode === "custom"
                     ? "bg-cyan-600 text-white shadow-md shadow-cyan-900/40 font-semibold"
@@ -327,13 +389,11 @@ export default function App() {
               >
                 <Palette className="h-4 w-4" />
                 <span>Custom Studio</span>
-              </button>
+              </a>
 
-              <button
-                onClick={() => {
-                  setActiveMode("animated");
-                  setLastBlob(null);
-                }}
+              <a
+                href="/animation"
+                onClick={(e) => handleLinkClick(e, "animated")}
                 className={`flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-medium transition-all ${
                   activeMode === "animated"
                     ? "bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-md shadow-purple-900/40 font-semibold"
@@ -345,7 +405,7 @@ export default function App() {
                 <span className="rounded bg-purple-500/25 px-1.5 py-0.5 text-[9px] font-bold uppercase text-purple-200 border border-purple-400/30">
                   GIF/WebP
                 </span>
-              </button>
+              </a>
             </div>
 
             <div className="flex items-center gap-2">
