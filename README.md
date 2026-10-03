@@ -207,3 +207,7 @@ curl -X POST http://localhost:3000/api/generate \
 
 ## 📄 License
 MIT License. Open source and ready for bot integrations and production workflows.
+
+## Support 
+<img width="256" height="256" alt="image" src="https://github.com/user-attachments/assets/ebbf178f-a0af-468c-bc6d-34f0502f30a8" />
+
