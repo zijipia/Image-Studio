@@ -117,11 +117,12 @@ export function LeaderboardForm({
           {/* Layout Selector */}
           <div>
             <label className="text-xs font-semibold text-amber-300">Bố Cục / Layout Bảng Xếp Hạng</label>
-            <div className="mt-1.5 grid grid-cols-3 gap-2">
+            <div className="mt-1.5 grid grid-cols-2 sm:grid-cols-4 gap-2">
               {[
                 { id: "podium", name: "🏆 3D Podium", desc: "Top 3 bục vinh quang" },
                 { id: "compact-list", name: "📋 Danh Sách Gọn", desc: "Huy hiệu 🥇🥈🥉" },
                 { id: "cyber-grid", name: "⚡ Cyber Grid", desc: "2 Cột đấu Cyberpunk" },
+                { id: "minimal-cards", name: "💎 Frosted Cards", desc: "Thẻ kính tiến trình" },
               ].map((l) => {
                 const isSelected = (data.layout || "podium") === l.id;
                 return (

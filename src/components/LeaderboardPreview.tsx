@@ -278,6 +278,82 @@ export function LeaderboardPreview({
                   );
                 })}
               </div>
+            ) : layout === "minimal-cards" ? (
+              <div className="flex w-full flex-col gap-2">
+                {items.map((item) => {
+                  const medal =
+                    item.rank === 1 ? "🥇" : item.rank === 2 ? "🥈" : item.rank === 3 ? "🥉" : `#${item.rank}`;
+                  const rankColor =
+                    item.rank === 1 ? "#f59e0b" : item.rank === 2 ? "#38bdf8" : item.rank === 3 ? "#f97316" : "#818cf8";
+                  const maxXp = items[0]?.xp || 1000;
+                  const xpBarPercent = Math.min(100, Math.max(5, Math.round((item.xp / maxXp) * 100)));
+                  return (
+                    <div
+                      key={item.rank}
+                      className="flex h-[72px] w-full items-center rounded-[14px] border px-4 transition-all hover:bg-white/[0.08]"
+                      style={{
+                        backgroundColor: "rgba(255, 255, 255, 0.05)",
+                        borderColor: `${rankColor}44`,
+                      }}
+                    >
+                      <div
+                        className="mr-3.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] text-[15px] font-bold"
+                        style={{
+                          backgroundColor: `${rankColor}20`,
+                          border: `1px solid ${rankColor}55`,
+                          color: rankColor,
+                        }}
+                      >
+                        {medal}
+                      </div>
+
+                      <img
+                        src={item.avatar}
+                        alt={item.username}
+                        className="mr-3.5 h-[46px] w-[46px] rounded-[12px] border-2 object-cover bg-black/40 shrink-0"
+                        style={{ borderColor: rankColor }}
+                        crossOrigin="anonymous"
+                      />
+
+                      <div className="min-w-0 flex-1 mr-3">
+                        <div className="truncate text-[15px] font-bold text-white">
+                          {item.username}
+                        </div>
+                        <div className="text-[11px] text-slate-400 mt-0.5">{item.handle}</div>
+                      </div>
+
+                      {/* Mini XP Bar */}
+                      <div className="mr-4 hidden sm:flex w-[100px] flex-col gap-1">
+                        <div className="h-2 w-full rounded-full bg-white/10 overflow-hidden p-0.5">
+                          <div
+                            className="h-full rounded-full transition-all duration-300"
+                            style={{
+                              width: `${xpBarPercent}%`,
+                              backgroundColor: rankColor,
+                            }}
+                          />
+                        </div>
+                      </div>
+
+                      <div className="flex flex-col items-end shrink-0">
+                        <div
+                          className="rounded-full px-2.5 py-0.5 text-[11px] font-bold"
+                          style={{
+                            backgroundColor: `${rankColor}20`,
+                            color: rankColor,
+                            border: `1px solid ${rankColor}55`,
+                          }}
+                        >
+                          Lv.{item.level}
+                        </div>
+                        <div className="mt-1 font-mono text-[12px] font-semibold text-slate-300">
+                          {item.xp.toLocaleString()} XP
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
             ) : (
               <>
                 {/* 2. Top 3 Podium */}

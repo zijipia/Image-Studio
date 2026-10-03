@@ -18,7 +18,7 @@ export interface ProfileData {
 }
 export interface ProfileGenerateRequest { type: "profile"; data: ProfileData; }
 
-export type LeaderboardLayout = "podium" | "compact-list" | "cyber-grid";
+export type LeaderboardLayout = "podium" | "compact-list" | "cyber-grid" | "minimal-cards";
 export interface LeaderboardItem { rank: number; username: string; handle: string; avatar: string; level: number; xp: number; }
 export interface LeaderboardData {
   guildIcon: string;

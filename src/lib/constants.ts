@@ -63,13 +63,16 @@ export const PROFILE_HEIGHT = 260;
 
 // Leaderboard Constants
 export const LEADERBOARD_WIDTH = 540;
-export function calculateLeaderboardHeight(itemCount: number, layout?: "podium" | "compact-list" | "cyber-grid"): number {
+export function calculateLeaderboardHeight(itemCount: number, layout?: "podium" | "compact-list" | "cyber-grid" | "minimal-cards"): number {
   if (layout === "compact-list") {
     return 20 + 76 + 16 + Math.max(1, itemCount) * 64 + Math.max(0, itemCount - 1) * 8 + 20;
   }
   if (layout === "cyber-grid") {
     const rows = Math.ceil(Math.max(1, itemCount) / 2);
     return 20 + 76 + 16 + rows * 82 + Math.max(0, rows - 1) * 8 + 20;
+  }
+  if (layout === "minimal-cards") {
+    return 20 + 76 + 16 + Math.max(1, itemCount) * 72 + Math.max(0, itemCount - 1) * 8 + 20;
   }
   if (itemCount <= 0) return 420;
   if (itemCount <= 3) {

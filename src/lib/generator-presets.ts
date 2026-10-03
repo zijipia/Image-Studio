@@ -218,6 +218,29 @@ export const BUILTIN_LEADERBOARD_PRESETS: StoredPreset<LeaderboardData>[] = [
       ],
     },
   },
+  {
+    id: "lb-frosted-cards",
+    name: "Frosted Glass Cards (Top 8)",
+    description: "Modern cards with individual XP progress tracks and neon accents",
+    category: "builtin",
+    badge: "Frosted · 8 Players",
+    data: {
+      guildName: "Celestial Esports Guild",
+      guildIcon: "https://i.ytimg.com/vi/rUxyKA_-grg/hq720.jpg",
+      season: "CHAMPIONSHIP 2026",
+      layout: "minimal-cards",
+      items: [
+        { rank: 1, username: "AstralKirin", handle: "@kirin_prime", avatar: "https://i.ytimg.com/vi/rUxyKA_-grg/hq720.jpg", level: 60, xp: 58200 },
+        { rank: 2, username: "CyberRonin", handle: "@ronin_x", avatar: "https://i.ytimg.com/vi/jfKfPfyJRdk/hq720.jpg", level: 55, xp: 51400 },
+        { rank: 3, username: "SolarisBlaze", handle: "@solaris", avatar: "https://i.ytimg.com/vi/MsHvLrs6sjk/hq720.jpg", level: 49, xp: 44800 },
+        { rank: 4, username: "ValkyrieAce", handle: "@valk_ace", avatar: "https://i.ytimg.com/vi/DWcJFNfaw9c/hq720.jpg", level: 42, xp: 37900 },
+        { rank: 5, username: "GlacierWolf", handle: "@glacier", avatar: "https://i.ytimg.com/vi/5qap5aO4i9A/hq720.jpg", level: 38, xp: 31200 },
+        { rank: 6, username: "ZephyrWind", handle: "@zephyr", avatar: "https://i.ytimg.com/vi/7NOSDKb0HlU/hq720.jpg", level: 34, xp: 26500 },
+        { rank: 7, username: "NightShade", handle: "@shade", avatar: "https://i.ytimg.com/vi/n61ULEU7SU0/hq720.jpg", level: 29, xp: 21800 },
+        { rank: 8, username: "IronHeart", handle: "@iron_heart", avatar: "https://i.ytimg.com/vi/1_C_Z9xT1m8/hq720.jpg", level: 25, xp: 17600 },
+      ],
+    },
+  },
 ];
 
 // 4. Built-in Quote Presets

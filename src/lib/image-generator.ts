@@ -690,18 +690,11 @@ export async function generateSongImage(request: {
 }
 
 /* =========================================================================
-   2. PROFILE RANK CARD GENERATION
+   2. PROFILE RANK CARD GENERATION (4 DISTINCT THEMES)
    ========================================================================= */
 
-export async function generateProfileImage(data: ProfileData): Promise<{ png: Buffer; height: number }> {
-  const avatarUri = await imageToDataUri(data.avatar, 180);
-  const percent = Math.min(100, Math.max(0, Math.round((data.currentXp / (data.requiredXp || 1)) * 100)));
-  const theme = data.theme || "ruby-poly";
-
-  // Selected theme layout
-  let element: any;
-
-  const element = {
+function renderProfileRubyPoly(data: ProfileData, avatarUri: string, percent: number) {
+  return {
     type: "div",
     props: {
       style: {
@@ -711,8 +704,8 @@ export async function generateProfileImage(data: ProfileData): Promise<{ png: Bu
         alignItems: "center",
         padding: "0 35px",
         borderRadius: "20px",
-        background: themeStyles.cardBg,
-        border: themeStyles.border,
+        background: "linear-gradient(135deg, #090210 0%, #1a031e 30%, #3d0728 65%, #630c33 100%)",
+        border: "1px solid rgba(244, 63, 94, 0.35)",
         position: "relative",
         overflow: "hidden",
       },
@@ -728,7 +721,7 @@ export async function generateProfileImage(data: ProfileData): Promise<{ png: Bu
               height: "450px",
               borderRadius: "40px",
               transform: "rotate(45deg)",
-              background: themeStyles.shape1,
+              background: "linear-gradient(45deg, rgba(225, 29, 72, 0.25), rgba(159, 18, 57, 0.05))",
             },
           },
         },
@@ -743,7 +736,7 @@ export async function generateProfileImage(data: ProfileData): Promise<{ png: Bu
               height: "350px",
               borderRadius: "30px",
               transform: "rotate(25deg)",
-              background: themeStyles.shape2,
+              background: "linear-gradient(135deg, rgba(136, 19, 55, 0.3), transparent)",
             },
           },
         },
@@ -751,30 +744,61 @@ export async function generateProfileImage(data: ProfileData): Promise<{ png: Bu
           type: "div",
           props: {
             style: {
-              width: "150px",
-              height: "150px",
-              borderRadius: themeStyles.avatarRadius,
-              padding: "4px",
-              background: themeStyles.avatarBorder,
+              position: "relative",
               display: "flex",
+              flexDirection: "column",
               alignItems: "center",
-              justifyContent: "center",
               flexShrink: 0,
-              boxShadow: "0 10px 25px rgba(0, 0, 0, 0.5)",
             },
             children: [
               {
-                type: "img",
+                type: "div",
                 props: {
-                  src: avatarUri,
-                  width: 142,
-                  height: 142,
                   style: {
-                    width: "142px",
-                    height: "142px",
-                    borderRadius: themeStyles.avatarRadius,
-                    objectFit: "cover",
+                    width: "150px",
+                    height: "150px",
+                    borderRadius: "999px",
+                    padding: "4px",
+                    background: "linear-gradient(135deg, #f43f5e, #fda4af, #f43f5e)",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    boxShadow: "0 10px 25px rgba(0, 0, 0, 0.5)",
                   },
+                  children: [
+                    {
+                      type: "img",
+                      props: {
+                        src: avatarUri,
+                        width: 142,
+                        height: 142,
+                        style: {
+                          width: "142px",
+                          height: "142px",
+                          borderRadius: "999px",
+                          objectFit: "cover",
+                        },
+                      },
+                    },
+                  ],
+                },
+              },
+              {
+                type: "div",
+                props: {
+                  style: {
+                    marginTop: "-14px",
+                    borderRadius: "999px",
+                    background: "#e11d48",
+                    border: "1px solid rgba(254, 205, 211, 0.5)",
+                    padding: "2px 10px",
+                    fontSize: "11px",
+                    fontWeight: 700,
+                    color: "#ffffff",
+                    fontFamily: "monospace",
+                    display: "flex",
+                  },
+                  children: `Lv. ${data.level ?? 1}`,
                 },
               },
             ],
@@ -804,19 +828,12 @@ export async function generateProfileImage(data: ProfileData): Promise<{ png: Bu
                     {
                       type: "div",
                       props: {
-                        style: {
-                          display: "flex",
-                          flexDirection: "column",
-                        },
+                        style: { display: "flex", flexDirection: "column" },
                         children: [
                           {
                             type: "div",
                             props: {
-                              style: {
-                                display: "flex",
-                                alignItems: "center",
-                                gap: "10px",
-                              },
+                              style: { display: "flex", alignItems: "center", gap: "10px" },
                               children: [
                                 {
                                   type: "div",
@@ -824,7 +841,7 @@ export async function generateProfileImage(data: ProfileData): Promise<{ png: Bu
                                     style: {
                                       fontSize: "34px",
                                       fontWeight: 700,
-                                      color: themeStyles.primaryText,
+                                      color: "#f43f5e",
                                       lineHeight: "40px",
                                     },
                                     children: data.username || "__ziji",
@@ -838,9 +855,9 @@ export async function generateProfileImage(data: ProfileData): Promise<{ png: Bu
                                           style: {
                                             padding: "3px 10px",
                                             borderRadius: "999px",
-                                            background: themeStyles.badgeBg,
-                                            border: themeStyles.badgeBorder,
-                                            color: themeStyles.badgeColor,
+                                            background: "rgba(244, 63, 94, 0.15)",
+                                            border: "1px solid rgba(244, 63, 94, 0.4)",
+                                            color: "#fb7185",
                                             fontSize: "11px",
                                             fontWeight: 700,
                                             letterSpacing: "0.5px",
@@ -859,7 +876,7 @@ export async function generateProfileImage(data: ProfileData): Promise<{ png: Bu
                             props: {
                               style: {
                                 fontSize: "19px",
-                                color: themeStyles.secondaryText,
+                                color: "#a1a1aa",
                                 marginTop: "2px",
                                 lineHeight: "25px",
                               },
@@ -873,12 +890,12 @@ export async function generateProfileImage(data: ProfileData): Promise<{ png: Bu
                       type: "div",
                       props: {
                         style: {
-                          padding: "5px 12px",
+                          padding: "5px 14px",
                           borderRadius: "10px",
-                          background: themeStyles.badgeBg,
-                          border: themeStyles.badgeBorder,
-                          color: themeStyles.primaryText,
-                          fontSize: "15px",
+                          background: "rgba(244, 63, 94, 0.18)",
+                          border: "1px solid rgba(244, 63, 94, 0.45)",
+                          color: "#fb7185",
+                          fontSize: "16px",
                           fontWeight: 700,
                           display: "flex",
                         },
@@ -895,7 +912,7 @@ export async function generateProfileImage(data: ProfileData): Promise<{ png: Bu
                     width: "660px",
                     height: "26px",
                     borderRadius: "999px",
-                    background: themeStyles.progressBg,
+                    background: "#3e4147",
                     marginTop: "16px",
                     overflow: "hidden",
                     display: "flex",
@@ -909,7 +926,7 @@ export async function generateProfileImage(data: ProfileData): Promise<{ png: Bu
                           width: `${Math.max(2, percent)}%`,
                           height: "100%",
                           borderRadius: "999px",
-                          background: themeStyles.progressFill,
+                          background: "linear-gradient(90deg, #f43f5e, #fb7185)",
                         },
                       },
                     },
@@ -922,44 +939,47 @@ export async function generateProfileImage(data: ProfileData): Promise<{ png: Bu
                   style: {
                     display: "flex",
                     flexDirection: "row",
-                    gap: "60px",
-                    marginTop: "18px",
+                    gap: "50px",
+                    marginTop: "16px",
                   },
                   children: [
                     {
                       type: "div",
                       props: {
                         style: {
-                          fontSize: "20px",
+                          fontSize: "18px",
                           fontWeight: 600,
-                          color: themeStyles.statsColor,
+                          color: "#fb7185",
                           letterSpacing: "1px",
+                          display: "flex",
                         },
-                        children: `LEVEL: ${data.level ?? 1}`,
+                        children: `⚔️ LEVEL ${data.level ?? 1}`,
                       },
                     },
                     {
                       type: "div",
                       props: {
                         style: {
-                          fontSize: "20px",
+                          fontSize: "18px",
                           fontWeight: 600,
-                          color: themeStyles.statsColor,
+                          color: "#fb7185",
                           letterSpacing: "1px",
+                          display: "flex",
                         },
-                        children: `XP: ${data.currentXp ?? 0}/${data.requiredXp ?? 100} (${percent}%)`,
+                        children: `⚡ XP: ${data.currentXp ?? 0}/${data.requiredXp ?? 100} (${percent}%)`,
                       },
                     },
                     {
                       type: "div",
                       props: {
                         style: {
-                          fontSize: "20px",
+                          fontSize: "18px",
                           fontWeight: 600,
-                          color: themeStyles.statsColor,
+                          color: "#fb7185",
                           letterSpacing: "1px",
+                          display: "flex",
                         },
-                        children: `RANK: ${data.rank ?? "#1"}`,
+                        children: `🏆 RANK: ${data.rank ?? "#1"}`,
                       },
                     },
                   ],
@@ -971,6 +991,949 @@ export async function generateProfileImage(data: ProfileData): Promise<{ png: Bu
       ],
     },
   };
+}
+
+function renderProfileCyberNeon(data: ProfileData, avatarUri: string, percent: number) {
+  return {
+    type: "div",
+    props: {
+      style: {
+        width: `${PROFILE_WIDTH}px`,
+        height: `${PROFILE_HEIGHT}px`,
+        display: "flex",
+        flexDirection: "column",
+        justifyContent: "space-between",
+        padding: "16px 24px",
+        borderRadius: "16px",
+        background:
+          "radial-gradient(circle at 85% 15%, rgba(192, 132, 252, 0.2) 0%, transparent 60%), linear-gradient(135deg, #050816 0%, #0c1024 50%, #160e29 100%)",
+        border: "2px solid rgba(56, 189, 248, 0.65)",
+        position: "relative",
+        overflow: "hidden",
+      },
+      children: [
+        // Cyber Top Status Bar
+        {
+          type: "div",
+          props: {
+            style: {
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              borderBottom: "1px solid rgba(56, 189, 248, 0.35)",
+              paddingBottom: "8px",
+              fontSize: "12px",
+              fontFamily: "monospace",
+            },
+            children: [
+              {
+                type: "div",
+                props: {
+                  style: {
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "8px",
+                    color: "#38bdf8",
+                  },
+                  children: [
+                    {
+                      type: "div",
+                      props: {
+                        style: {
+                          width: "8px",
+                          height: "8px",
+                          borderRadius: "999px",
+                          background: "#38bdf8",
+                        },
+                      },
+                    },
+                    {
+                      type: "span",
+                      props: { children: "CYBER_ID // NETWORK_RANK_STATUS" },
+                    },
+                  ],
+                },
+              },
+              {
+                type: "div",
+                props: {
+                  style: {
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "16px",
+                    fontSize: "11px",
+                  },
+                  children: [
+                    {
+                      type: "span",
+                      props: {
+                        style: { color: "#e879f9" },
+                        children: `NET_WORTH: ${data.balance || "0 xu"}`,
+                      },
+                    },
+                    {
+                      type: "span",
+                      props: {
+                        style: { color: "#94a3b8" },
+                        children: "SYS_ID: #4092-A",
+                      },
+                    },
+                  ],
+                },
+              },
+            ],
+          },
+        },
+        // Main 3-Zone Body
+        {
+          type: "div",
+          props: {
+            style: {
+              display: "flex",
+              alignItems: "center",
+              gap: "24px",
+              padding: "8px 0",
+            },
+            children: [
+              // Left: Square Tech Avatar
+              {
+                type: "div",
+                props: {
+                  style: {
+                    position: "relative",
+                    width: "128px",
+                    height: "128px",
+                    borderRadius: "14px",
+                    border: "2px solid #38bdf8",
+                    padding: "4px",
+                    background: "rgba(0, 0, 0, 0.6)",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    flexShrink: 0,
+                  },
+                  children: [
+                    {
+                      type: "img",
+                      props: {
+                        src: avatarUri,
+                        width: 118,
+                        height: 118,
+                        style: {
+                          width: "118px",
+                          height: "118px",
+                          borderRadius: "10px",
+                          objectFit: "cover",
+                        },
+                      },
+                    },
+                    {
+                      type: "div",
+                      props: {
+                        style: {
+                          position: "absolute",
+                          bottom: "-6px",
+                          borderRadius: "4px",
+                          background: "#38bdf8",
+                          padding: "2px 8px",
+                          fontSize: "9px",
+                          fontWeight: 700,
+                          color: "#000000",
+                          fontFamily: "monospace",
+                          letterSpacing: "0.5px",
+                          display: "flex",
+                        },
+                        children: `SYNCED // LVL ${data.level ?? 1}`,
+                      },
+                    },
+                  ],
+                },
+              },
+              // Center: Info & Segmented XP Bar
+              {
+                type: "div",
+                props: {
+                  style: {
+                    flex: 1,
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "6px",
+                  },
+                  children: [
+                    {
+                      type: "div",
+                      props: {
+                        style: {
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "12px",
+                        },
+                        children: [
+                          {
+                            type: "div",
+                            props: {
+                              style: {
+                                fontSize: "30px",
+                                fontWeight: 700,
+                                color: "#67e8f9",
+                                lineHeight: "36px",
+                              },
+                              children: data.username || "Neon_Kenshi",
+                            },
+                          },
+                          ...(data.badge
+                            ? [
+                                {
+                                  type: "div",
+                                  props: {
+                                    style: {
+                                      padding: "2px 8px",
+                                      borderRadius: "4px",
+                                      background: "rgba(56, 189, 248, 0.2)",
+                                      border: "1px solid rgba(56, 189, 248, 0.5)",
+                                      color: "#38bdf8",
+                                      fontSize: "11px",
+                                      fontWeight: 700,
+                                      fontFamily: "monospace",
+                                      display: "flex",
+                                    },
+                                    children: data.badge,
+                                  },
+                                },
+                              ]
+                            : []),
+                        ],
+                      },
+                    },
+                    {
+                      type: "div",
+                      props: {
+                        style: {
+                          fontSize: "12px",
+                          color: "#f0abfc",
+                          fontFamily: "monospace",
+                        },
+                        children: `${data.title ? `${data.title} // ` : ""}STATUS: COMBAT_ACTIVE`,
+                      },
+                    },
+                    // Segmented Laser XP Bar
+                    {
+                      type: "div",
+                      props: {
+                        style: {
+                          display: "flex",
+                          flexDirection: "column",
+                          gap: "4px",
+                          marginTop: "4px",
+                        },
+                        children: [
+                          {
+                            type: "div",
+                            props: {
+                              style: {
+                                display: "flex",
+                                justifyContent: "space-between",
+                                fontSize: "11px",
+                                fontFamily: "monospace",
+                                color: "rgba(56, 189, 248, 0.9)",
+                              },
+                              children: [
+                                {
+                                  type: "span",
+                                  props: { children: `EXP_BUFFER: ${data.currentXp ?? 0} / ${data.requiredXp ?? 100}` },
+                                },
+                                {
+                                  type: "span",
+                                  props: { children: `${percent}% INTEGRITY` },
+                                },
+                              ],
+                            },
+                          },
+                          {
+                            type: "div",
+                            props: {
+                              style: {
+                                width: "500px",
+                                height: "20px",
+                                borderRadius: "4px",
+                                background: "rgba(0, 0, 0, 0.7)",
+                                border: "1px solid rgba(56, 189, 248, 0.45)",
+                                padding: "2px",
+                                display: "flex",
+                                gap: "3px",
+                              },
+                              children: Array.from({ length: 20 }, (_, idx) => {
+                                const active = (idx + 1) * 5 <= percent;
+                                return {
+                                  type: "div",
+                                  props: {
+                                    key: idx,
+                                    style: {
+                                      flex: 1,
+                                      height: "100%",
+                                      borderRadius: "2px",
+                                      background: active
+                                        ? "linear-gradient(180deg, #38bdf8 0%, #e879f9 100%)"
+                                        : "rgba(255, 255, 255, 0.08)",
+                                    },
+                                  },
+                                };
+                              }),
+                            },
+                          },
+                        ],
+                      },
+                    },
+                  ],
+                },
+              },
+              // Right: Holographic Rank Box
+              {
+                type: "div",
+                props: {
+                  style: {
+                    width: "128px",
+                    height: "120px",
+                    borderRadius: "14px",
+                    border: "1px solid rgba(232, 121, 249, 0.45)",
+                    background: "rgba(74, 4, 78, 0.25)",
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    flexShrink: 0,
+                  },
+                  children: [
+                    {
+                      type: "div",
+                      props: {
+                        style: { fontSize: "10px", color: "#f0abfc", fontFamily: "monospace" },
+                        children: "SERVER RANK",
+                      },
+                    },
+                    {
+                      type: "div",
+                      props: {
+                        style: {
+                          fontSize: "32px",
+                          fontWeight: 700,
+                          color: "#e879f9",
+                          lineHeight: "36px",
+                          margin: "2px 0",
+                          fontFamily: "monospace",
+                        },
+                        children: data.rank ?? "#1",
+                      },
+                    },
+                    {
+                      type: "div",
+                      props: {
+                        style: { fontSize: "10px", fontWeight: 700, color: "#38bdf8", fontFamily: "monospace" },
+                        children: "TIER: ELITE_S",
+                      },
+                    },
+                  ],
+                },
+              },
+            ],
+          },
+        },
+        // Bottom Telemetry Bar
+        {
+          type: "div",
+          props: {
+            style: {
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              borderTop: "1px solid rgba(56, 189, 248, 0.35)",
+              paddingTop: "6px",
+              fontSize: "10px",
+              fontFamily: "monospace",
+              color: "rgba(56, 189, 248, 0.75)",
+            },
+            children: [
+              {
+                type: "span",
+                props: { children: "SEC_LAYER: AES-256 · ENCRYPTED LINK" },
+              },
+              {
+                type: "span",
+                props: { children: "IMAGE_STUDIO // CYBERNETIC_RENDER_CORE" },
+              },
+            ],
+          },
+        },
+      ],
+    },
+  };
+}
+
+function renderProfileGlassMinimal(data: ProfileData, avatarUri: string, percent: number) {
+  return {
+    type: "div",
+    props: {
+      style: {
+        width: `${PROFILE_WIDTH}px`,
+        height: `${PROFILE_HEIGHT}px`,
+        display: "flex",
+        alignItems: "center",
+        padding: "24px 36px",
+        borderRadius: "24px",
+        background:
+          "radial-gradient(circle at 10% 20%, rgba(16, 185, 129, 0.25) 0%, transparent 60%), linear-gradient(135deg, #021a14 0%, #06241c 50%, #0a1b24 100%)",
+        border: "1px solid rgba(52, 211, 153, 0.4)",
+        position: "relative",
+        overflow: "hidden",
+      },
+      children: [
+        // Left Avatar
+        {
+          type: "div",
+          props: {
+            style: {
+              width: "138px",
+              height: "138px",
+              borderRadius: "999px",
+              padding: "3px",
+              background: "linear-gradient(135deg, #34d399, #2dd4bf, #ffffff)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              flexShrink: 0,
+            },
+            children: [
+              {
+                type: "img",
+                props: {
+                  src: avatarUri,
+                  width: 132,
+                  height: 132,
+                  style: {
+                    width: "132px",
+                    height: "132px",
+                    borderRadius: "999px",
+                    objectFit: "cover",
+                  },
+                },
+              },
+            ],
+          },
+        },
+        // Right Content Area
+        {
+          type: "div",
+          props: {
+            style: {
+              marginLeft: "32px",
+              flex: 1,
+              display: "flex",
+              flexDirection: "column",
+              justifyContent: "space-between",
+              height: "190px",
+            },
+            children: [
+              // Top: Title & Name
+              {
+                type: "div",
+                props: {
+                  style: {
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                  },
+                  children: [
+                    {
+                      type: "div",
+                      props: {
+                        style: { display: "flex", flexDirection: "column" },
+                        children: [
+                          {
+                            type: "div",
+                            props: {
+                              style: {
+                                fontSize: "12px",
+                                fontWeight: 600,
+                                color: "#34d399",
+                                letterSpacing: "1px",
+                              },
+                              children: (data.title || "Aura Champion · Verified Player").toUpperCase(),
+                            },
+                          },
+                          {
+                            type: "div",
+                            props: {
+                              style: { display: "flex", alignItems: "center", gap: "12px", marginTop: "2px" },
+                              children: [
+                                {
+                                  type: "div",
+                                  props: {
+                                    style: { fontSize: "32px", fontWeight: 700, color: "#ffffff", lineHeight: "38px" },
+                                    children: data.username || "AetherLord",
+                                  },
+                                },
+                                ...(data.badge
+                                  ? [
+                                      {
+                                        type: "div",
+                                        props: {
+                                          style: {
+                                            padding: "3px 10px",
+                                            borderRadius: "999px",
+                                            background: "rgba(16, 185, 129, 0.2)",
+                                            border: "1px solid rgba(52, 211, 153, 0.4)",
+                                            color: "#a7f3d0",
+                                            fontSize: "11px",
+                                            fontWeight: 600,
+                                            display: "flex",
+                                          },
+                                          children: data.badge,
+                                        },
+                                      },
+                                    ]
+                                  : []),
+                              ],
+                            },
+                          },
+                        ],
+                      },
+                    },
+                    {
+                      type: "div",
+                      props: {
+                        style: { display: "flex", flexDirection: "column", alignItems: "flex-end" },
+                        children: [
+                          {
+                            type: "div",
+                            props: {
+                              style: { fontSize: "11px", color: "rgba(167, 243, 208, 0.8)", letterSpacing: "1px" },
+                              children: "TREASURY BALANCE",
+                            },
+                          },
+                          {
+                            type: "div",
+                            props: {
+                              style: { fontSize: "20px", fontWeight: 700, color: "#34d399", fontFamily: "monospace" },
+                              children: data.balance || "0 xu",
+                            },
+                          },
+                        ],
+                      },
+                    },
+                  ],
+                },
+              },
+              // Middle: Sleek Pill XP Track
+              {
+                type: "div",
+                props: {
+                  style: { display: "flex", flexDirection: "column", gap: "6px" },
+                  children: [
+                    {
+                      type: "div",
+                      props: {
+                        style: { display: "flex", justifyContent: "space-between", fontSize: "12px", color: "#cbd5e1" },
+                        children: [
+                          {
+                            type: "span",
+                            props: { children: "Experience Progression" },
+                          },
+                          {
+                            type: "span",
+                            props: {
+                              style: { color: "#6ee7b7", fontWeight: 600, fontFamily: "monospace" },
+                              children: `${data.currentXp ?? 0} / ${data.requiredXp ?? 100} XP (${percent}%)`,
+                            },
+                          },
+                        ],
+                      },
+                    },
+                    {
+                      type: "div",
+                      props: {
+                        style: {
+                          width: "100%",
+                          height: "12px",
+                          borderRadius: "999px",
+                          background: "rgba(0, 0, 0, 0.5)",
+                          border: "1px solid rgba(52, 211, 153, 0.25)",
+                          padding: "1px",
+                          display: "flex",
+                        },
+                        children: [
+                          {
+                            type: "div",
+                            props: {
+                              style: {
+                                width: `${Math.max(2, percent)}%`,
+                                height: "100%",
+                                borderRadius: "999px",
+                                background: "linear-gradient(90deg, #10b981, #2dd4bf, #6ee7b7)",
+                              },
+                            },
+                          },
+                        ],
+                      },
+                    },
+                  ],
+                },
+              },
+              // Bottom: 4 Minimalist Metric Columns
+              {
+                type: "div",
+                props: {
+                  style: {
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    borderTop: "1px solid rgba(255, 255, 255, 0.1)",
+                    paddingTop: "8px",
+                  },
+                  children: [
+                    {
+                      type: "div",
+                      props: {
+                        style: { display: "flex", flexDirection: "column" },
+                        children: [
+                          { type: "div", props: { style: { fontSize: "11px", color: "#94a3b8" }, children: "Current Level" } },
+                          { type: "div", props: { style: { fontSize: "17px", fontWeight: 700, color: "#ffffff", fontFamily: "monospace" }, children: `Lv.${data.level ?? 1}` } },
+                        ],
+                      },
+                    },
+                    {
+                      type: "div",
+                      props: {
+                        style: { display: "flex", flexDirection: "column" },
+                        children: [
+                          { type: "div", props: { style: { fontSize: "11px", color: "#94a3b8" }, children: "Server Rank" } },
+                          { type: "div", props: { style: { fontSize: "17px", fontWeight: 700, color: "#34d399", fontFamily: "monospace" }, children: `${data.rank ?? "#1"} Elite` } },
+                        ],
+                      },
+                    },
+                    {
+                      type: "div",
+                      props: {
+                        style: { display: "flex", flexDirection: "column" },
+                        children: [
+                          { type: "div", props: { style: { fontSize: "11px", color: "#94a3b8" }, children: "Completion" } },
+                          { type: "div", props: { style: { fontSize: "17px", fontWeight: 700, color: "#2dd4bf", fontFamily: "monospace" }, children: `${percent}% XP` } },
+                        ],
+                      },
+                    },
+                    {
+                      type: "div",
+                      props: {
+                        style: { display: "flex", flexDirection: "column" },
+                        children: [
+                          { type: "div", props: { style: { fontSize: "11px", color: "#94a3b8" }, children: "Prestige Status" } },
+                          { type: "div", props: { style: { fontSize: "17px", fontWeight: 700, color: "#6ee7b7", fontFamily: "monospace" }, children: "Tier X Legend" } },
+                        ],
+                      },
+                    },
+                  ],
+                },
+              },
+            ],
+          },
+        },
+      ],
+    },
+  };
+}
+
+function renderProfileGoldLegend(data: ProfileData, avatarUri: string, percent: number) {
+  return {
+    type: "div",
+    props: {
+      style: {
+        width: `${PROFILE_WIDTH}px`,
+        height: `${PROFILE_HEIGHT}px`,
+        display: "flex",
+        alignItems: "center",
+        padding: "22px 36px",
+        borderRadius: "20px",
+        background:
+          "radial-gradient(circle at 90% 10%, rgba(245, 158, 11, 0.3) 0%, transparent 60%), linear-gradient(135deg, #140d02 0%, #261a05 45%, #181003 100%)",
+        border: "2px solid rgba(245, 158, 11, 0.65)",
+        position: "relative",
+        overflow: "hidden",
+      },
+      children: [
+        // Regal Filigree Accents in 4 corners
+        { type: "div", props: { style: { position: "absolute", top: "8px", left: "12px", color: "#fbbf24", fontSize: "12px" }, children: "❖" } },
+        { type: "div", props: { style: { position: "absolute", top: "8px", right: "12px", color: "#fbbf24", fontSize: "12px" }, children: "❖" } },
+        { type: "div", props: { style: { position: "absolute", bottom: "8px", left: "12px", color: "#fbbf24", fontSize: "12px" }, children: "❖" } },
+        { type: "div", props: { style: { position: "absolute", bottom: "8px", right: "12px", color: "#fbbf24", fontSize: "12px" }, children: "❖" } },
+
+        // Left Crowned Avatar
+        {
+          type: "div",
+          props: {
+            style: {
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              flexShrink: 0,
+            },
+            children: [
+              {
+                type: "div",
+                props: {
+                  style: { fontSize: "22px", marginBottom: "4px" },
+                  children: "👑",
+                },
+              },
+              {
+                type: "div",
+                props: {
+                  style: {
+                    width: "128px",
+                    height: "128px",
+                    borderRadius: "999px",
+                    padding: "3px",
+                    background: "linear-gradient(135deg, #fef08a, #f59e0b, #b45309)",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  },
+                  children: [
+                    {
+                      type: "img",
+                      props: {
+                        src: avatarUri,
+                        width: 122,
+                        height: 122,
+                        style: {
+                          width: "122px",
+                          height: "122px",
+                          borderRadius: "999px",
+                          objectFit: "cover",
+                        },
+                      },
+                    },
+                  ],
+                },
+              },
+            ],
+          },
+        },
+        // Right Content Area
+        {
+          type: "div",
+          props: {
+            style: {
+              marginLeft: "32px",
+              flex: 1,
+              display: "flex",
+              flexDirection: "column",
+              justifyContent: "space-between",
+              height: "190px",
+            },
+            children: [
+              // Top Laurel & Name
+              {
+                type: "div",
+                props: {
+                  style: { display: "flex", flexDirection: "column" },
+                  children: [
+                    {
+                      type: "div",
+                      props: {
+                        style: { display: "flex", alignItems: "center", justifyContent: "space-between" },
+                        children: [
+                          {
+                            type: "div",
+                            props: {
+                              style: { fontSize: "11px", fontWeight: 700, letterSpacing: "1.5px", color: "rgba(254, 240, 138, 0.9)" },
+                              children: "✦ IMPERIAL SOVEREIGN OF THE REALM ✦",
+                            },
+                          },
+                          {
+                            type: "div",
+                            props: {
+                              style: {
+                                padding: "3px 10px",
+                                borderRadius: "8px",
+                                background: "rgba(245, 158, 11, 0.25)",
+                                border: "1px solid rgba(245, 158, 11, 0.6)",
+                                color: "#fef08a",
+                                fontSize: "11px",
+                                fontWeight: 700,
+                                display: "flex",
+                              },
+                              children: `${data.rank ?? "#1"} SOVEREIGN`,
+                            },
+                          },
+                        ],
+                      },
+                    },
+                    {
+                      type: "div",
+                      props: {
+                        style: { display: "flex", alignItems: "center", gap: "12px", marginTop: "4px" },
+                        children: [
+                          {
+                            type: "div",
+                            props: {
+                              style: { fontSize: "32px", fontWeight: 700, color: "#fde047", lineHeight: "38px" },
+                              children: data.username || "Aurelius_Rex",
+                            },
+                          },
+                          ...(data.badge
+                            ? [
+                                {
+                                  type: "div",
+                                  props: {
+                                    style: {
+                                      padding: "3px 10px",
+                                      borderRadius: "999px",
+                                      background: "rgba(245, 158, 11, 0.2)",
+                                      border: "1px solid rgba(245, 158, 11, 0.5)",
+                                      color: "#fef08a",
+                                      fontSize: "11px",
+                                      fontWeight: 700,
+                                      display: "flex",
+                                    },
+                                    children: data.badge,
+                                  },
+                                },
+                              ]
+                            : []),
+                        ],
+                      },
+                    },
+                  ],
+                },
+              },
+              // Middle Imperial Gold Progress Bar
+              {
+                type: "div",
+                props: {
+                  style: { display: "flex", flexDirection: "column", gap: "5px" },
+                  children: [
+                    {
+                      type: "div",
+                      props: {
+                        style: { display: "flex", justifyContent: "space-between", fontSize: "12px", color: "#fef3c7" },
+                        children: [
+                          { type: "span", props: { children: "Imperial Ascendancy XP" } },
+                          {
+                            type: "span",
+                            props: {
+                              style: { color: "#fde047", fontWeight: 700, fontFamily: "monospace" },
+                              children: `${data.currentXp ?? 0} / ${data.requiredXp ?? 100} XP (${percent}%)`,
+                            },
+                          },
+                        ],
+                      },
+                    },
+                    {
+                      type: "div",
+                      props: {
+                        style: {
+                          width: "100%",
+                          height: "16px",
+                          borderRadius: "999px",
+                          background: "rgba(0, 0, 0, 0.65)",
+                          border: "1px solid rgba(245, 158, 11, 0.45)",
+                          padding: "2px",
+                          display: "flex",
+                        },
+                        children: [
+                          {
+                            type: "div",
+                            props: {
+                              style: {
+                                width: `${Math.max(2, percent)}%`,
+                                height: "100%",
+                                borderRadius: "999px",
+                                background: "linear-gradient(90deg, #f59e0b, #fde047, #f59e0b)",
+                              },
+                            },
+                          },
+                        ],
+                      },
+                    },
+                  ],
+                },
+              },
+              // Bottom Imperial Heraldic Badges
+              {
+                type: "div",
+                props: {
+                  style: {
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    borderTop: "1px solid rgba(245, 158, 11, 0.3)",
+                    paddingTop: "8px",
+                    fontSize: "12px",
+                  },
+                  children: [
+                    {
+                      type: "div",
+                      props: {
+                        style: { display: "flex", alignItems: "center", gap: "12px" },
+                        children: [
+                          {
+                            type: "div",
+                            props: {
+                              style: {
+                                padding: "3px 10px",
+                                borderRadius: "6px",
+                                background: "rgba(69, 26, 3, 0.8)",
+                                border: "1px solid rgba(245, 158, 11, 0.5)",
+                                color: "#fde047",
+                                fontWeight: 700,
+                                fontSize: "12px",
+                                display: "flex",
+                              },
+                              children: `LEVEL: ${data.level ?? 80}`,
+                            },
+                          },
+                          {
+                            type: "div",
+                            props: {
+                              style: { color: "rgba(254, 243, 199, 0.85)" },
+                              children: `TITLE: ${data.title || "Imperial Vanguard"}`,
+                            },
+                          },
+                        ],
+                      },
+                    },
+                    {
+                      type: "div",
+                      props: {
+                        style: { color: "#fde047", fontWeight: 700, fontFamily: "monospace", fontSize: "14px" },
+                        children: `TREASURY: ${data.balance || "0 xu"}`,
+                      },
+                    },
+                  ],
+                },
+              },
+            ],
+          },
+        },
+      ],
+    },
+  };
+}
+
+export async function generateProfileImage(data: ProfileData): Promise<{ png: Buffer; height: number }> {
+  const avatarUri = await imageToDataUri(data.avatar, 180);
+  const percent = Math.min(100, Math.max(0, Math.round((data.currentXp / (data.requiredXp || 1)) * 100)));
+  const theme = data.theme || "ruby-poly";
+
+  let element: any;
+  if (theme === "cyber-neon") {
+    element = renderProfileCyberNeon(data, avatarUri, percent);
+  } else if (theme === "glass-minimal") {
+    element = renderProfileGlassMinimal(data, avatarUri, percent);
+  } else if (theme === "gold-legend") {
+    element = renderProfileGoldLegend(data, avatarUri, percent);
+  } else {
+    element = renderProfileRubyPoly(data, avatarUri, percent);
+  }
 
   const fonts = loadFonts();
   const svg = await satori(element as any, {
@@ -1415,6 +2378,191 @@ export async function generateLeaderboardImage(data: LeaderboardData): Promise<{
                                 },
                               },
                             ],
+                          },
+                        },
+                      ],
+                    },
+                  },
+                ],
+              },
+            };
+          }),
+        },
+      },
+    ];
+  } else if (layout === "minimal-cards") {
+    bodyElements = [
+      {
+        type: "div",
+        props: {
+          style: {
+            width: "100%",
+            display: "flex",
+            flexDirection: "column",
+            gap: "8px",
+          },
+          children: items.map((item, idx) => {
+            const rankColor =
+              item.rank === 1 ? "#f59e0b" : item.rank === 2 ? "#38bdf8" : item.rank === 3 ? "#f97316" : "#818cf8";
+            const uri = itemUris[idx] || FALLBACK_AVATAR;
+            const maxXp = items[0]?.xp || 1000;
+            const xpBarPercent = Math.min(100, Math.max(5, Math.round((item.xp / maxXp) * 100)));
+            return {
+              type: "div",
+              props: {
+                style: {
+                  width: "100%",
+                  height: "72px",
+                  display: "flex",
+                  alignItems: "center",
+                  padding: "0 16px",
+                  borderRadius: "14px",
+                  background: "rgba(255, 255, 255, 0.05)",
+                  border: `1px solid ${rankColor}44`,
+                },
+                children: [
+                  {
+                    type: "div",
+                    props: {
+                      style: {
+                        width: "36px",
+                        height: "36px",
+                        borderRadius: "10px",
+                        background: `${rankColor}20`,
+                        border: `1px solid ${rankColor}55`,
+                        color: rankColor,
+                        fontSize: "15px",
+                        fontWeight: 700,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        marginRight: "14px",
+                        flexShrink: 0,
+                      },
+                      children: item.rank === 1 ? "🥇" : item.rank === 2 ? "🥈" : item.rank === 3 ? "🥉" : `#${item.rank}`,
+                    },
+                  },
+                  {
+                    type: "img",
+                    props: {
+                      src: uri,
+                      width: 46,
+                      height: 46,
+                      style: {
+                        width: "46px",
+                        height: "46px",
+                        borderRadius: "12px",
+                        border: `2px solid ${rankColor}`,
+                        objectFit: "cover",
+                        marginRight: "14px",
+                        flexShrink: 0,
+                      },
+                    },
+                  },
+                  {
+                    type: "div",
+                    props: {
+                      style: {
+                        flex: 1,
+                        display: "flex",
+                        flexDirection: "column",
+                        minWidth: 0,
+                        marginRight: "14px",
+                      },
+                      children: [
+                        {
+                          type: "div",
+                          props: {
+                            style: {
+                              fontSize: "15px",
+                              fontWeight: 700,
+                              color: "#ffffff",
+                              overflow: "hidden",
+                              whiteSpace: "nowrap",
+                              textOverflow: "ellipsis",
+                            },
+                            children: item.username,
+                          },
+                        },
+                        {
+                          type: "div",
+                          props: {
+                            style: {
+                              fontSize: "11px",
+                              color: "#94a3b8",
+                              marginTop: "2px",
+                            },
+                            children: item.handle,
+                          },
+                        },
+                      ],
+                    },
+                  },
+                  {
+                    type: "div",
+                    props: {
+                      style: {
+                        width: "90px",
+                        height: "8px",
+                        borderRadius: "999px",
+                        background: "rgba(255, 255, 255, 0.1)",
+                        overflow: "hidden",
+                        display: "flex",
+                        marginRight: "16px",
+                        flexShrink: 0,
+                      },
+                      children: [
+                        {
+                          type: "div",
+                          props: {
+                            style: {
+                              width: `${xpBarPercent}%`,
+                              height: "100%",
+                              borderRadius: "999px",
+                              background: rankColor,
+                            },
+                          },
+                        },
+                      ],
+                    },
+                  },
+                  {
+                    type: "div",
+                    props: {
+                      style: {
+                        display: "flex",
+                        flexDirection: "column",
+                        alignItems: "flex-end",
+                        flexShrink: 0,
+                      },
+                      children: [
+                        {
+                          type: "div",
+                          props: {
+                            style: {
+                              padding: "2px 8px",
+                              borderRadius: "999px",
+                              background: `${rankColor}20`,
+                              border: `1px solid ${rankColor}55`,
+                              color: rankColor,
+                              fontSize: "11px",
+                              fontWeight: 700,
+                              display: "flex",
+                            },
+                            children: `Lv.${item.level}`,
+                          },
+                        },
+                        {
+                          type: "div",
+                          props: {
+                            style: {
+                              fontSize: "12px",
+                              fontWeight: 600,
+                              color: "#cbd5e1",
+                              marginTop: "3px",
+                              fontFamily: "monospace",
+                            },
+                            children: `${item.xp} XP`,
                           },
                         },
                       ],
@@ -2633,7 +3781,7 @@ export async function generateQuoteImage(data: QuoteData): Promise<{ png: Buffer
                       left: 0,
                       width: "480px",
                       height: "500px",
-                      background: "linear-gradient(to right, rgba(0,0,0,0) 30%, rgba(0,0,0,0.85) 80%, #000000 100%)",
+                      background: "linear-gradient(90deg, rgba(0,0,0,0) 30%, rgba(0,0,0,0.85) 80%, #000000 100%)",
                     },
                   },
                 },

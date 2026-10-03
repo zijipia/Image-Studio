@@ -14,14 +14,28 @@ Image Studio provides a full-featured visual creation suite optimized for Discor
 - High-res cover art, track numbering, duration, and artist metadata formatting.
 
 ### 2. 👤 Profile & Rank Card
-- User profile banner showing avatar, rank badge, level progress, and XP percentage.
-- 4 custom gradient themes: *Ruby Poly*, *Purple Glow*, *Midnight Blue*, and *Dark Slate*.
+- User profile banner showing avatar, rank badge, level progress, XP percentage, and coin balance.
+- **4 Distinct Artwork Themes**:
+  - `ruby-poly`: Crimson angular geometric shards, circular glowing avatar, 3D XP bar, Lv badge, and balance.
+  - `cyber-neon`: Cyberpunk Sci-Fi HUD ID card with dual cyan/magenta laser scanners, square tech avatar, telemetry status, and NET_WORTH stats.
+  - `glass-minimal`: Frosted emerald glass aesthetic, glowing matrix telemetry, and sleek rounded level pills.
+  - `gold-legend`: Imperial gold sovereign rank card with laurel filigree, regal golden crown, and imperial ascendancy XP bar.
 
 ### 3. 🏆 Guild Leaderboard
-- Server/guild rank tables displaying top members, customized avatars, ranks, and XP values.
+- Server/guild rank tables displaying top members, customized guild icon, avatars, ranks, and XP values.
+- **4 Distinct Layouts**:
+  - `podium`: 3D Olympic podium for Top 3 with imperial gold crown on 1st place, followed by compact rows for subsequent ranks.
+  - `compact-list`: Classic Discord table with 🥇🥈🥉 medals, colored level badges, and XP values.
+  - `cyber-grid`: 2-column cyberpunk duel arena cards with neon rank tags and square avatars.
+  - `minimal-cards`: Frosted glass floating cards with percentage progress bar relative to leader.
 
 ### 4. 💬 Quote Card
-- Elegant typographic card generator with custom avatar, handle, and message quotation.
+- Elegant typographic card generator with custom avatar, author, handle, and message quotation.
+- **4 Distinct Layouts**:
+  - `split-portrait`: Cinematic split layout with left character portrait fading smoothly into right typography.
+  - `centered-minimal`: Editorial centered typography with glowing gradient avatar ring and watermark.
+  - `modern-card`: Frosted glass card floating on blurred backdrop with verified author badge.
+  - `neon-cyber`: Sci-Fi terminal cyber HUD with corner brackets, audio telemetry bars, and recording indicator.
 
 ### 5. 🎨 Presets & Template Manager (Local Storage)
 - **Built-in Curated Templates**: Instantly switch between curated configurations for Song Search, Profile Cards, Guild Leaderboards, and Quotes.
@@ -141,20 +155,24 @@ curl -X POST http://localhost:3000/api/generate \
 ---
 
 ### Example 2: User Rank / Profile Card
+Supports `"theme": "ruby-poly" | "cyber-neon" | "glass-minimal" | "gold-legend"`.
+
 ```bash
 curl -X POST http://localhost:3000/api/generate \
   -H "Content-Type: application/json" \
   -d '{
     "type": "profile",
     "data": {
-      "username": "ziji",
+      "username": "__ziji",
       "rank": "#1",
       "level": 42,
       "currentXp": 8500,
       "requiredXp": 10000,
-      "balance": "1,250,000",
+      "balance": "13,080 xu",
+      "badge": "★ TOP 1 GUILD",
+      "title": "Ruby Grandmaster",
       "avatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=300",
-      "theme": "purple-glow"
+      "theme": "cyber-neon"
     }
   }' \
   --output profile.png
@@ -162,7 +180,62 @@ curl -X POST http://localhost:3000/api/generate \
 
 ---
 
-### Example 3: Animated GIF / WebP Banner
+### Example 3: Guild Leaderboard
+Supports `"layout": "podium" | "compact-list" | "cyber-grid" | "minimal-cards"`.
+
+```bash
+curl -X POST http://localhost:3000/api/generate \
+  -H "Content-Type: application/json" \
+  -d '{
+    "type": "leaderboard",
+    "data": {
+      "guildName": "Celestial Realm",
+      "season": "SEASON 4",
+      "layout": "podium",
+      "guildIcon": "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=150",
+      "items": [
+        { "rank": 1, "username": "Aurelius", "handle": "@aurelius_rex", "avatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150", "level": 99, "xp": 94820 },
+        { "rank": 2, "username": "Valkyrie", "handle": "@valk_prime", "avatar": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150", "level": 88, "xp": 82140 },
+        { "rank": 3, "username": "Kage", "handle": "@shadow_blade", "avatar": "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=150", "level": 75, "xp": 67390 }
+      ]
+    }
+  }' \
+  --output leaderboard.png
+```
+
+---
+
+### Example 4: Quote Card
+Supports `"layout": "split-portrait" | "centered-minimal" | "modern-card" | "neon-cyber"`.
+
+```bash
+curl -X POST http://localhost:3000/api/generate \
+  -H "Content-Type: application/json" \
+  -d '{
+    "type": "quote",
+    "data": {
+      "quote": "Stay hungry, stay foolish.",
+      "author": "Steve Jobs",
+      "handle": "@stevejobs",
+      "tag": "Stanford 2005",
+      "avatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=500",
+      "layout": "split-portrait"
+    }
+  }' \
+  --output quote.png
+```
+
+---
+
+### Example 5: Single Frame PNG Extraction & Animation
+Extract a single PNG frame from animation timeline with zero body via GET:
+```bash
+# Direct GET URL:
+curl "http://localhost:3000/api/animation/frame?preset=welcome&time=350&userName=Alex&guildName=Legends" \
+  --output welcome-frame.png
+```
+
+Or render full animated GIF / WebP:
 ```bash
 curl -X POST http://localhost:3000/api/generate \
   -H "Content-Type: application/json" \
@@ -173,53 +246,22 @@ curl -X POST http://localhost:3000/api/generate \
       "title": "Welcome Animation",
       "format": "gif",
       "loop": 0,
-      "delay": [100, 100, 100],
+      "delay": 100,
       "frames": [
         {
           "title": "Frame 1",
           "width": 930,
           "height": 280,
           "background": "#090614",
-          "elements": [
-            {
-              "id": "welcome-txt",
-              "type": "text",
-              "x": 200,
-              "y": 80,
-              "width": 500,
-              "height": 50,
-              "content": "Welcome!",
-              "color": "#ffffff",
-              "fontSize": 42,
-              "opacity": 0.2
-            }
-          ]
-        },
-        {
-          "title": "Frame 2",
-          "width": 930,
-          "height": 280,
-          "background": "#090614",
-          "elements": [
-            {
-              "id": "welcome-txt",
-              "type": "text",
-              "x": 200,
-              "y": 80,
-              "width": 500,
-              "height": 50,
-              "content": "Welcome!",
-              "color": "#ffffff",
-              "fontSize": 42,
-              "opacity": 1
-            }
-          ]
+          "elements": []
         }
       ]
     }
   }' \
   --output animated-welcome.gif
 ```
+
+> 📖 **Full API Reference**: Check out [`docs/api.md`](docs/api.md) for complete schemas, response headers, Python, Node.js, and Discord bot integration examples.
 
 ---
 
