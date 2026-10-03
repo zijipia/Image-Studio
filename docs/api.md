@@ -275,15 +275,142 @@ curl -X POST http://localhost:3000/api/generate \
 
 ---
 
-## 5. 🎬 Animation & Single Frame API
+## 5. 🎨 Custom Freeform Canvas API
 
-### A) Extract Single PNG Frame via GET (Zero-Configuration)
-Directly extract any static frame from an animation timeline preset with query parameters:
-```bash
-GET /api/animation/frame?preset=welcome&time=350&userName=Alex&guildName=Legends
+Allows generating cards from freeform layer elements (text, badges, avatars, images, progress bars, and particle systems).
+
+- **Payload Type**: `"custom"`
+- **Width & Height**: Custom dimensions (e.g. `930px` × `280px`).
+
+### Supported Element Types:
+- `text`: Custom text with `fontSize`, `fontWeight`, `color`, `textAlign`, `textShadow`, and glow effects.
+- `badge`: Pill or rectangular badges with background and borders.
+- `avatar`: Rounded or circular avatar images with borders.
+- `image`: General image layer with custom dimensions and `objectFit: "cover"`.
+- `progress`: XP or audio progress bar with `progressPercent` (0–100) and custom color.
+- `particle`: Localized particle effect box (`spark`, `petals`, `snow`, `fire`, `stars`, `music`).
+
+### JSON Payload Schema
+```json
+{
+  "type": "custom",
+  "data": {
+    "title": "Custom Member Card",
+    "width": 930,
+    "height": 280,
+    "background": "linear-gradient(135deg, #090614 0%, #1e1035 100%)",
+    "elements": [
+      {
+        "id": "user-avatar",
+        "type": "avatar",
+        "x": 40,
+        "y": 40,
+        "width": 140,
+        "height": 140,
+        "imageUrl": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=300",
+        "borderRadius": 999,
+        "border": "4px solid #c084fc",
+        "zIndex": 2
+      },
+      {
+        "id": "welcome-text",
+        "type": "text",
+        "x": 210,
+        "y": 60,
+        "width": 680,
+        "height": 50,
+        "content": "Welcome, Explorer!",
+        "color": "#ffffff",
+        "fontSize": 42,
+        "fontWeight": 700,
+        "textShadow": "0 0 16px rgba(192, 132, 252, 0.8)",
+        "zIndex": 3
+      },
+      {
+        "id": "member-badge",
+        "type": "badge",
+        "x": 210,
+        "y": 140,
+        "width": 140,
+        "height": 32,
+        "content": "✦ GUILD VIP",
+        "color": "#ffffff",
+        "backgroundColor": "#7e22ce",
+        "borderRadius": 8,
+        "fontSize": 14,
+        "zIndex": 3
+      }
+    ]
+  }
+}
 ```
 
-### B) Extract Single PNG Frame via POST (Custom Canvas)
+---
+
+## 6. ✨ Particle Effects Engine
+
+All static card generators (`song`, `profile`, `leaderboard`, `quote`) support an optional `particleConfig` parameter, and custom canvas/animations support `particleSystem`.
+
+### Built-in Particle Presets (`preset`):
+- `"spark"`: Bright golden/violet sparkle diamond stars.
+- `"petals"`: Organic Sakura cherry blossom petals drifting with wind.
+- `"snow"`: Crisp white snowflakes falling with subtle horizontal drift.
+- `"fire"`: Rising flame embers with heat flicker and color cooling.
+- `"stars"`: Multi-colored twinkling cosmos stars.
+- `"music"`: Neon floating musical notes.
+
+### Example: Adding Particles to Any Card
+```json
+{
+  "type": "profile",
+  "data": {
+    "username": "ziji",
+    "theme": "ruby-poly",
+    "particleConfig": {
+      "preset": "spark",
+      "count": 40,
+      "color": "#fbbf24",
+      "glow": true
+    }
+  }
+}
+```
+
+---
+
+## 7. 🎬 Animation & Single Frame API
+
+### Available Built-in Animation Presets (`preset`):
+| Preset ID | Name | Duration | Default FPS | Description |
+|---|---|---|---|---|
+| `welcome` | Welcome Card | 1500 ms | 12 | Avatar pop-in with `{userName}` and `{guildName}` |
+| `cyber-rotation` | Cyber Dynamic Entrance | 1500 ms | 15 | 3D transform rotation & scale entrance with HUD scanlines |
+| `music` | Now Playing Wave | 1600 ms | 12 | Track title, artist, breathing album cover, and moving progress bar |
+| `rank-up` | Rank Up / XP | 1400 ms | 12 | Level progression with glowing badge pop and animated XP bar |
+| `spark-magic` | Spark Magic Banner | 1800 ms | 15 | Gold celestial sparkles and starlight particle drift |
+| `sakura-petals` | Sakura Petals Anime | 2400 ms | 15 | Gentle falling sakura petals and romantic anime styling |
+| `music-neon` | Music Neon Wave | 2000 ms | 15 | Audio visualizer wave motion with floating music notes |
+
+---
+
+### A) Extract Single PNG Frame via GET (Zero-Configuration)
+Directly extract any static frame from an animation preset with query parameters. Any additional query parameter automatically replaces `{variableName}` in text and image URLs:
+
+```bash
+# Extract frame at 350ms with custom userName and avatar:
+curl "http://localhost:3000/api/animation/frame?preset=welcome&time=350&userName=Alex&guildName=Legends&userAVTurl=https%3A%2F%2Fimages.unsplash.com%2Fphoto-1534528741775-53994a69daeb%3Fw%3D300" \
+  --output welcome-frame.png
+```
+
+#### Query Parameters:
+- `preset`: Preset ID (Default: `"welcome"`). Options: `welcome`, `cyber-rotation`, `music`, `rank-up`, `spark-magic`, `sakura-petals`, `music-neon`.
+- `time` (or `frameTime`): Time position in milliseconds (e.g. `350`).
+- `frame` (or `frameIndex`): Frame index (0-based integer, e.g. `4`).
+- Any custom template variables: e.g. `userName=PlayerOne`, `guildName=Mythic`.
+
+---
+
+### B) Extract Single PNG Frame via POST (Custom Timeline)
 ```bash
 curl -X POST "http://localhost:3000/api/animation/frame?time=350" \
   -H "Content-Type: application/json" \
@@ -293,18 +420,36 @@ curl -X POST "http://localhost:3000/api/animation/frame?time=350" \
       "width": 930,
       "height": 280,
       "background": "#090614",
-      "elements": []
+      "elements": [
+        {
+          "id": "avatar",
+          "type": "avatar",
+          "x": 40,
+          "y": 40,
+          "width": 140,
+          "height": 140,
+          "imageUrl": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=300"
+        }
+      ]
     },
-    "tracks": [],
-    "templateVariables": {
-      "userName": "Alex",
-      "guildName": "Legends"
-    }
+    "tracks": [
+      {
+        "elementId": "avatar",
+        "keyframes": [
+          { "time": 0, "scaleX": 0.5, "scaleY": 0.5, "opacity": 0 },
+          { "time": 500, "scaleX": 1.0, "scaleY": 1.0, "opacity": 1, "easing": "bounce" }
+        ]
+      }
+    ]
   }' \
   --output frame-350ms.png
 ```
 
-### C) Render Full GIF / WebP Animation
+---
+
+### C) Render Full GIF / WebP Animation (Compact Keyframe Format)
+Compact timeline format reduces payload size by ~98% by defining the base canvas and keyframe tracks:
+
 ```bash
 curl -X POST http://localhost:3000/api/generate \
   -H "Content-Type: application/json" \
@@ -314,10 +459,54 @@ curl -X POST http://localhost:3000/api/generate \
     "data": {
       "title": "Welcome Animation",
       "format": "gif",
+      "duration": 1500,
+      "fps": 12,
       "loop": 0,
-      "delay": 100,
-      "canvas": { "width": 930, "height": 280, "background": "#090614", "elements": [] },
-      "tracks": []
+      "canvas": {
+        "title": "Welcome Card",
+        "width": 930,
+        "height": 280,
+        "background": "#090614",
+        "elements": [
+          {
+            "id": "avatar",
+            "type": "avatar",
+            "x": 36,
+            "y": 40,
+            "width": 140,
+            "height": 140,
+            "imageUrl": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=300"
+          },
+          {
+            "id": "title",
+            "type": "text",
+            "x": 205,
+            "y": 55,
+            "width": 650,
+            "height": 52,
+            "content": "Welcome, Adventurer!",
+            "color": "#ffffff",
+            "fontSize": 44,
+            "fontWeight": 700
+          }
+        ]
+      },
+      "tracks": [
+        {
+          "elementId": "avatar",
+          "keyframes": [
+            { "time": 0, "scaleX": 0.2, "scaleY": 0.2, "opacity": 0 },
+            { "time": 600, "scaleX": 1.0, "scaleY": 1.0, "opacity": 1, "easing": "bounce" }
+          ]
+        },
+        {
+          "elementId": "title",
+          "keyframes": [
+            { "time": 200, "y": 80, "opacity": 0 },
+            { "time": 700, "y": 55, "opacity": 1, "easing": "ease-out" }
+          ]
+        }
+      ]
     }
   }' \
   --output welcome.gif
@@ -325,7 +514,7 @@ curl -X POST http://localhost:3000/api/generate \
 
 ---
 
-## 6. 📊 Server Stats Counter API
+## 8. 📊 Server Stats Counter API
 
 Query server generation counter:
 ```bash

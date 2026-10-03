@@ -4,9 +4,7 @@ Image Studio supports animated output through the existing `/api/generate` endpo
 
 ## Animation Timeline
 
-The UI is available at:
-
-`/?studio=animation`
+The UI is available at `/animation` (or `/?studio=animation`).
 
 The Timeline provides:
 

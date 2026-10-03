@@ -37,23 +37,29 @@ Image Studio provides a full-featured visual creation suite optimized for Discor
   - `modern-card`: Frosted glass card floating on blurred backdrop with verified author badge.
   - `neon-cyber`: Sci-Fi terminal cyber HUD with corner brackets, audio telemetry bars, and recording indicator.
 
-### 5. 🎨 Presets & Template Manager (Local Storage)
+### 5. 🎨 Custom Freeform Canvas Studio
+- Freeform drag-and-drop layer canvas generator (`/custom`).
+- Add and position arbitrary layers: Text, Badges, Avatars, Custom Images, Progress Bars, and Particle Emitters.
+- Rich typography styling: custom fonts, line heights, letter spacing, text shadows, and glowing aura.
+
+### 6. 💾 Presets & Template Manager (Local Storage)
 - **Built-in Curated Templates**: Instantly switch between curated configurations for Song Search, Profile Cards, Guild Leaderboards, and Quotes.
 - **Save to Local Storage**: Save custom configurations with custom names and notes directly to your browser's persistent storage.
 - **1-Click Apply & Management**: Load saved presets with a single click, view badge summaries, and remove outdated presets easily.
 
-### 6. 🎬 Animation Studio (GIF & WebP)
+### 7. 🎬 Animation Studio (GIF & WebP)
 - **Interactive Multi-Track Timeline**:
   - **Timeline Scrubbing**: Click and drag across the time ruler (`0ms`, `300ms`, `600ms`, `900ms`, `1200ms`, `1500ms`...) or track lanes to smoothly scrub the playhead with live frame updates.
   - **Draggable Keyframes**: Drag keyframe diamonds horizontally across track lanes to reposition their timing with live playhead feedback.
   - **Drag-and-Drop Layer Reordering**: Drag tracks up and down in either the Timeline column or the Layers sidebar to change layer order (`zIndex`) instantly.
   - **Keyframe Easing Curves**: Supports `Ease In-Out`, `Linear`, `Ease In`, `Ease Out`, and `Bounce` overshoot animations.
   - **Direct Canvas Manipulation**: Click any element to select, drag to reposition, and grab corner handles to scale dimensions with live pixel coordinates.
-  - **1-Click Starter Templates**: Built-in animation templates including *Welcome Discord Card*, *Now Playing Wave*, and *Rank Up / XP Banner*.
+  - **7 Built-in Starter Templates**: *Welcome Card*, *Cyber Dynamic Entrance*, *Now Playing Wave*, *Rank Up / XP*, *✨ Spark Magic Banner*, *🌸 Sakura Petals Anime*, and *🎵 Music Neon Wave*.
   - **Template Variables**: Automatically parse `{userName}`, `{guildName}`, `{userAVTurl}` or custom variables inside Text Content and Image URLs, with 1-click insert chips and live preview.
   - **API Payload Inspector (Compact Keyframes)**: View, edit, and export API JSON payloads in **⚡ Siêu ngắn (Compact Keyframes)** format (~50 lines instead of 3,000 lines, reducing payload size by ~98% by defining base canvas + keyframe tracks). Supports unparsed template variables (`{vars}`) or resolved values, syntax check, live editor, download `.json`, cURL generator, and instant test render.
+  - **Particle Effects System**: Ambient particles with customizable shapes: `spark` (diamond stars), `petals` (cherry blossoms), `snow` (snowflakes), `fire` (flame embers), `stars` (night cosmos), and `music` (neon notes).
   - **Color Palette & Native Picker**: Built-in color picker with curated swatch palette (White, Purple Glow, Violet, Neon Pink, Rose, Amber, Gold, Emerald, Cyan, Blue, etc.) for text, backgrounds, and progress bars.
-  - **Export Options**: Export high-quality **GIF** and **Animated WebP** with custom FPS (10, 12, 15, 20, 24) and duration.
+  - **Export Options**: Export high-quality **GIF** and **Animated WebP** with custom FPS (10, 12, 15, 20, 24) and duration, or extract instantaneous single PNG frames.
 
 ---
 
@@ -227,15 +233,57 @@ curl -X POST http://localhost:3000/api/generate \
 
 ---
 
-### Example 5: Single Frame PNG Extraction & Animation
-Extract a single PNG frame from animation timeline with zero body via GET:
+### Example 5: Custom Freeform Canvas Card
 ```bash
-# Direct GET URL:
+curl -X POST http://localhost:3000/api/generate \
+  -H "Content-Type: application/json" \
+  -d '{
+    "type": "custom",
+    "data": {
+      "title": "Welcome Card",
+      "width": 930,
+      "height": 280,
+      "background": "linear-gradient(135deg, #090614 0%, #1e1035 100%)",
+      "elements": [
+        {
+          "id": "avatar",
+          "type": "avatar",
+          "x": 40,
+          "y": 40,
+          "width": 140,
+          "height": 140,
+          "imageUrl": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=300",
+          "borderRadius": 999
+        },
+        {
+          "id": "title",
+          "type": "text",
+          "x": 210,
+          "y": 60,
+          "width": 680,
+          "height": 50,
+          "content": "Welcome to Image Studio!",
+          "color": "#ffffff",
+          "fontSize": 40,
+          "fontWeight": 700
+        }
+      ]
+    }
+  }' \
+  --output custom-card.png
+```
+
+---
+
+### Example 6: Single Frame PNG Extraction & Animation
+Extract a single PNG frame from animation presets via GET (with automatic `{userName}`, `{guildName}`, `{userAVTurl}` replacement):
+```bash
+# Presets: welcome | cyber-rotation | music | rank-up | spark-magic | sakura-petals | music-neon
 curl "http://localhost:3000/api/animation/frame?preset=welcome&time=350&userName=Alex&guildName=Legends" \
   --output welcome-frame.png
 ```
 
-Or render full animated GIF / WebP:
+Or render full animated GIF / WebP (Compact Keyframe format):
 ```bash
 curl -X POST http://localhost:3000/api/generate \
   -H "Content-Type: application/json" \
@@ -245,21 +293,34 @@ curl -X POST http://localhost:3000/api/generate \
     "data": {
       "title": "Welcome Animation",
       "format": "gif",
+      "duration": 1500,
+      "fps": 12,
       "loop": 0,
-      "delay": 100,
-      "frames": [
+      "canvas": {
+        "title": "Welcome Card",
+        "width": 930,
+        "height": 280,
+        "background": "#090614",
+        "elements": [
+          { "id": "avatar", "type": "avatar", "x": 36, "y": 40, "width": 140, "height": 140, "imageUrl": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=300" },
+          { "id": "title", "type": "text", "x": 205, "y": 55, "width": 650, "height": 52, "content": "Welcome, Adventurer!", "color": "#ffffff", "fontSize": 44, "fontWeight": 700 }
+        ]
+      },
+      "tracks": [
         {
-          "title": "Frame 1",
-          "width": 930,
-          "height": 280,
-          "background": "#090614",
-          "elements": []
+          "elementId": "avatar",
+          "keyframes": [
+            { "time": 0, "scaleX": 0.2, "scaleY": 0.2, "opacity": 0 },
+            { "time": 600, "scaleX": 1.0, "scaleY": 1.0, "opacity": 1, "easing": "bounce" }
+          ]
         }
       ]
     }
   }' \
   --output animated-welcome.gif
 ```
+
+> 💡 **Tip**: All card endpoints (`song`, `profile`, `leaderboard`, `quote`) accept an optional `"particleConfig": { "preset": "spark" | "petals" | "snow" | "fire" | "stars" | "music" }` object for animated ambient particles.
 
 > 📖 **Full API Reference**: Check out [`docs/api.md`](docs/api.md) for complete schemas, response headers, Python, Node.js, and Discord bot integration examples.
 
