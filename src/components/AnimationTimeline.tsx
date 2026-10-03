@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import type { CustomCanvasData, CustomElement, CustomElementType } from "../lib/types";
+import { recordGeneratedImage } from "../lib/use-stats";
 import {
   Film,
   Play,
@@ -1118,6 +1119,9 @@ export function AnimationTimeline() {
       const blob = await r.blob();
       if (!blob.size) throw new Error("The server returned an empty file.");
 
+      const headerTotal = r.headers.get("X-Total-Generated");
+      recordGeneratedImage(headerTotal ? parseInt(headerTotal, 10) : undefined);
+
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       const safeName =
@@ -1305,6 +1309,9 @@ export function AnimationTimeline() {
 
       const blob = await r.blob();
       if (!blob.size) throw new Error("The server returned an empty file.");
+
+      const headerTotal = r.headers.get("X-Total-Generated");
+      recordGeneratedImage(headerTotal ? parseInt(headerTotal, 10) : undefined);
 
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");

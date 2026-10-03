@@ -1,6 +1,7 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import type { AnyGenerateRequest } from "../src/lib/types.js";
 import { dispatchGenerate } from "../src/lib/animated-generator.js";
+import { incrementGeneratedCount } from "../src/server/stats.js";
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== "POST") {
@@ -16,10 +17,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     const { buffer, height, mime, filename } = await dispatchGenerate(body);
+    const totalCount = incrementGeneratedCount();
 
     res.setHeader("Content-Type", mime);
     res.setHeader("Content-Length", buffer.length.toString());
     res.setHeader("X-Image-Height", height.toString());
+    res.setHeader("X-Total-Generated", totalCount.toString());
+    res.setHeader("Access-Control-Expose-Headers", "X-Total-Generated, X-Image-Height");
     res.setHeader(
       "Content-Disposition",
       `attachment; filename="${encodeURIComponent(filename)}"`

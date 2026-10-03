@@ -56,6 +56,15 @@ Supports HTML5 History API, deep linking, browser back/forward navigation, and o
 
 ---
 
+## 📊 Live Generation Stats Counter
+
+- **Server Counter & Persistence**: Every exported image and animation is counted via `POST /api/generate` with an atomic server counter persisted to `.app-stats.json`.
+- **API Endpoint**: `GET /api/stats` returns `{ "totalGenerated": number, "lastGeneratedAt": string }`.
+- **Live UI Header Badge**: Prominently displayed in the top bar with a live pulsing status indicator and synced counter.
+- **Client Cache**: Synchronized with `localStorage` for offline support and immediate client-side count reflection.
+
+---
+
 ## 🚀 Quick Start (Local Development)
 
 ### Prerequisites

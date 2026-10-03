@@ -15,6 +15,7 @@ import {
   defaultQuoteData,
 } from "./lib/sample-data";
 import { DEFAULT_CUSTOM_CANVAS } from "./lib/constants";
+import { useStats, recordGeneratedImage } from "./lib/use-stats";
 import { GeneratorForm } from "./components/GeneratorForm";
 import { ImagePreview } from "./components/ImagePreview";
 import { ProfileForm } from "./components/ProfileForm";
@@ -81,6 +82,8 @@ export function getPathFromMode(mode: GeneratorType): string {
 }
 
 export default function App() {
+  const { totalCount, userCount } = useStats();
+
   const [activeMode, setActiveMode] = useState<GeneratorType>(() => {
     if (typeof window !== "undefined") {
       return getModeFromPath(window.location.pathname, window.location.search);
@@ -187,6 +190,9 @@ export default function App() {
 
         const blob = await response.blob();
         setLastBlob(blob);
+
+        const headerTotal = response.headers.get("X-Total-Generated");
+        recordGeneratedImage(headerTotal ? parseInt(headerTotal, 10) : undefined);
 
         const url = URL.createObjectURL(blob);
         const anchor = document.createElement("a");
@@ -303,8 +309,26 @@ export default function App() {
           </button>
         </nav>
 
-        {/* Zone 3: Primary Action */}
+        {/* Zone 3: Primary Action & Stat Counter */}
         <div className="flex items-center gap-3">
+          {/* Live Stat Counter Badge */}
+          <div
+            className="flex items-center gap-2 rounded-xl border border-white/10 bg-black/40 px-3 py-1.5 text-xs text-slate-300 shadow-sm backdrop-blur-md transition-all hover:border-purple-500/30"
+            title={`Tổng số ảnh/banner đã tạo: ${totalCount} (Thiết bị này đã tạo: ${userCount})`}
+          >
+            <div className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
+            </div>
+            <div className="flex items-center gap-1.5 font-mono">
+              <span className="text-slate-400 text-[11px] hidden sm:inline">Created:</span>
+              <span className="font-bold text-emerald-400 text-xs">
+                {totalCount.toLocaleString()}
+              </span>
+              <span className="text-slate-400 text-[11px]">image</span>
+            </div>
+          </div>
+
           <button
             onClick={() => handleGenerate()}
             disabled={isGenerating}

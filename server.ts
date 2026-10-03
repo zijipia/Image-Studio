@@ -3,6 +3,7 @@ import { createServer as createViteServer } from "vite";
 import path from "path";
 import { fileURLToPath } from "url";
 import { dispatchGenerate } from "./src/lib/animated-generator";
+import { getStats, incrementGeneratedCount } from "./src/server/stats";
 import type { AnyGenerateRequest } from "./src/lib/types";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -14,6 +15,12 @@ async function startServer() {
 
   app.use(express.json({ limit: "15mb" }));
 
+  // Stats Route
+  app.get("/api/stats", (_req, res) => {
+    res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
+    return res.status(200).json(getStats());
+  });
+
   // API Route for static and animated image generation.
   app.post("/api/generate", async (req, res) => {
     try {
@@ -24,10 +31,13 @@ async function startServer() {
       }
 
       const { buffer, height, mime, filename } = await dispatchGenerate(body);
+      const totalCount = incrementGeneratedCount();
 
       res.setHeader("Content-Type", mime);
       res.setHeader("Content-Length", buffer.length.toString());
       res.setHeader("X-Image-Height", height.toString());
+      res.setHeader("X-Total-Generated", totalCount.toString());
+      res.setHeader("Access-Control-Expose-Headers", "X-Total-Generated, X-Image-Height");
       res.setHeader(
         "Content-Disposition",
         `attachment; filename="${encodeURIComponent(filename)}"`
