@@ -35,6 +35,9 @@ Image Studio provides a full-featured visual creation suite optimized for Discor
   - **Keyframe Easing Curves**: Supports `Ease In-Out`, `Linear`, `Ease In`, `Ease Out`, and `Bounce` overshoot animations.
   - **Direct Canvas Manipulation**: Click any element to select, drag to reposition, and grab corner handles to scale dimensions with live pixel coordinates.
   - **1-Click Starter Templates**: Built-in animation templates including *Welcome Discord Card*, *Now Playing Wave*, and *Rank Up / XP Banner*.
+  - **Template Variables**: Automatically parse `{userName}`, `{guildName}`, `{userAVTurl}` or custom variables inside Text Content and Image URLs, with 1-click insert chips and live preview.
+  - **API Payload Inspector (Raw & Parsed)**: View, edit, and export API JSON payloads with a toggle between **Chưa parse** (raw template with `{vars}`) and **Đã parse** (resolved values). Includes live JSON editing, validation, download `.json`, cURL generator, and test-render execution.
+  - **Color Palette & Native Picker**: Built-in color picker with curated swatch palette (White, Purple Glow, Violet, Neon Pink, Rose, Amber, Gold, Emerald, Cyan, Blue, etc.) for text, backgrounds, and progress bars.
   - **Export Options**: Export high-quality **GIF** and **Animated WebP** with custom FPS (10, 12, 15, 20, 24) and duration.
 
 ---

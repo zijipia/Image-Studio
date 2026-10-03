@@ -25,6 +25,12 @@ import {
   ArrowUp,
   ArrowDown,
   GripVertical,
+  SlidersHorizontal,
+  Palette,
+  X,
+  RefreshCw,
+  FileJson,
+  Terminal,
 } from "lucide-react";
 
 export type KeyframeProperty = "x" | "y" | "width" | "height" | "opacity";
@@ -72,6 +78,137 @@ function applyEasing(t: number, easing: EasingType = "ease-in-out"): number {
   }
 }
 
+// Default template variables
+export const DEFAULT_TEMPLATE_VARIABLES: Record<string, string> = {
+  userAVTurl: "https://github.com/user-attachments/assets/ebbf178f-a0af-468c-bc6d-34f0502f30a8",
+  userName: "ziji",
+  guildName: "Hội Vô Danh 2",
+};
+
+/**
+ * Replace any {varName} in a string with the corresponding value from vars
+ */
+export function parseTemplateString(input: string | undefined, vars: Record<string, string>): string {
+  if (!input) return "";
+  return input.replace(/\{([a-zA-Z0-9_-]+)\}/g, (match, key) => {
+    if (Object.prototype.hasOwnProperty.call(vars, key)) {
+      return vars[key];
+    }
+    return match;
+  });
+}
+
+// Preset color swatches for the color palette
+const COLOR_SWATCHES = [
+  { name: "White", hex: "#ffffff" },
+  { name: "Slate", hex: "#94a3b8" },
+  { name: "Black", hex: "#000000" },
+  { name: "Purple Glow", hex: "#c084fc" },
+  { name: "Violet", hex: "#a855f7" },
+  { name: "Deep Violet", hex: "#7c3aed" },
+  { name: "Pink Neon", hex: "#ec4899" },
+  { name: "Rose", hex: "#f43f5e" },
+  { name: "Red", hex: "#ef4444" },
+  { name: "Amber", hex: "#f59e0b" },
+  { name: "Gold", hex: "#fbbf24" },
+  { name: "Emerald", hex: "#10b981" },
+  { name: "Cyan", hex: "#06b6d4" },
+  { name: "Blue", hex: "#3b82f6" },
+  { name: "Indigo", hex: "#6366f1" },
+];
+
+/**
+ * Reusable Color Picker & Swatch Palette Control
+ */
+function ColorPalettePicker({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  onChange: (color: string) => void;
+}) {
+  const [showSwatches, setShowSwatches] = useState(false);
+  const colorValue = value && value.startsWith("#") ? value : "#ffffff";
+
+  return (
+    <div className="space-y-1.5">
+      <div className="flex items-center justify-between text-[11px] text-slate-400">
+        <span>{label}</span>
+        <button
+          type="button"
+          onClick={() => setShowSwatches((v) => !v)}
+          className="flex items-center gap-1 text-[10px] text-purple-400 hover:text-purple-300"
+        >
+          <Palette className="h-3 w-3" />
+          <span>{showSwatches ? "Ẩn bảng" : "Bảng màu"}</span>
+        </button>
+      </div>
+
+      <div className="flex items-center gap-2">
+        {/* Color preview & native picker trigger */}
+        <label
+          className="relative flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg border border-white/20 shadow-inner flex-shrink-0"
+          style={{ backgroundColor: colorValue }}
+          title="Bấm để chọn màu"
+        >
+          <input
+            type="color"
+            value={colorValue.length === 7 ? colorValue : "#ffffff"}
+            onChange={(e) => onChange(e.target.value)}
+            className="absolute inset-0 h-full w-full opacity-0 cursor-pointer"
+          />
+        </label>
+
+        {/* Text hex input */}
+        <input
+          type="text"
+          value={value || ""}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder="#ffffff"
+          className="w-full rounded-lg border border-white/10 bg-black/40 px-2 py-1.5 text-xs text-white outline-none focus:border-purple-500 font-mono"
+        />
+      </div>
+
+      {/* Quick Swatch Palette Grid */}
+      {showSwatches && (
+        <div className="rounded-xl border border-white/10 bg-black/60 p-2 space-y-1.5 shadow-lg">
+          <div className="text-[10px] text-slate-400 font-semibold">Màu phổ biến:</div>
+          <div className="grid grid-cols-5 gap-1.5">
+            {COLOR_SWATCHES.map((swatch) => (
+              <button
+                key={swatch.hex}
+                type="button"
+                onClick={() => {
+                  onChange(swatch.hex);
+                }}
+                className={`group relative flex h-6 w-full items-center justify-center rounded-md border transition hover:scale-110 ${
+                  value?.toLowerCase() === swatch.hex.toLowerCase()
+                    ? "border-white ring-2 ring-purple-400"
+                    : "border-white/10 hover:border-white/40"
+                }`}
+                style={{ backgroundColor: swatch.hex }}
+                title={`${swatch.name} (${swatch.hex})`}
+              >
+                {value?.toLowerCase() === swatch.hex.toLowerCase() && (
+                  <Check
+                    className={`h-3 w-3 ${
+                      swatch.hex === "#ffffff" || swatch.hex === "#fbbf24"
+                        ? "text-black"
+                        : "text-white"
+                    }`}
+                  />
+                )}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 interface AnimationPreset {
   id: string;
   name: string;
@@ -86,7 +223,7 @@ const PRESETS: AnimationPreset[] = [
   {
     id: "welcome",
     name: "Welcome Card",
-    description: "Avatar pop-in with glowing title slide",
+    description: "Avatar pop-in với biến {userName} và {guildName}",
     duration: 1500,
     fps: 12,
     canvas: {
@@ -102,7 +239,7 @@ const PRESETS: AnimationPreset[] = [
           y: 40,
           width: 140,
           height: 140,
-          imageUrl: "https://github.com/user-attachments/assets/ebbf178f-a0af-468c-bc6d-34f0502f30a8",
+          imageUrl: "{userAVTurl}",
           borderRadius: 999,
           border: "4px solid rgba(168, 85, 247, 0.6)",
         },
@@ -113,7 +250,7 @@ const PRESETS: AnimationPreset[] = [
           y: 55,
           width: 650,
           height: 52,
-          content: "Welcome, Adventurer!",
+          content: "Welcome, {userName}!",
           color: "#ffffff",
           fontSize: 44,
           fontWeight: 700,
@@ -125,7 +262,7 @@ const PRESETS: AnimationPreset[] = [
           y: 115,
           width: 650,
           height: 38,
-          content: "Joined the guild · Ready for battle",
+          content: "Joined {guildName} · Ready for battle",
           color: "#c084fc",
           fontSize: 24,
           fontWeight: 500,
@@ -195,7 +332,7 @@ const PRESETS: AnimationPreset[] = [
           y: 40,
           width: 140,
           height: 140,
-          imageUrl: "https://raw.githubusercontent.com/zijipia/zijipia/refs/heads/main/Assets/zilove.png",
+          imageUrl: "{userAVTurl}",
           borderRadius: 20,
           border: "2px solid rgba(52, 211, 153, 0.4)",
         },
@@ -218,7 +355,7 @@ const PRESETS: AnimationPreset[] = [
           y: 108,
           width: 600,
           height: 32,
-          content: "Synthwave Collective · 3:42",
+          content: "DJ {userName} · {guildName}",
           color: "#6ee7b7",
           fontSize: 22,
           fontWeight: 500,
@@ -288,7 +425,7 @@ const PRESETS: AnimationPreset[] = [
           y: 50,
           width: 600,
           height: 48,
-          content: "LEVEL UP ACHIEVED!",
+          content: "LEVEL UP: {userName}!",
           color: "#fbbf24",
           fontSize: 38,
           fontWeight: 800,
@@ -300,7 +437,7 @@ const PRESETS: AnimationPreset[] = [
           y: 110,
           width: 600,
           height: 32,
-          content: "XP: 14,850 / 15,000 (+1,200 Bonus XP)",
+          content: "XP: 14,850 / 15,000 · {guildName}",
           color: "#fed7aa",
           fontSize: 22,
           fontWeight: 500,
@@ -357,7 +494,11 @@ function propertyValue(
   return lerp(a[p] ?? fallback, b[p] ?? fallback, eased);
 }
 
-function buildFrame(canvas: CustomCanvasData, tracks: Track[], time: number): CustomCanvasData {
+function buildFrame(
+  canvas: CustomCanvasData,
+  tracks: Track[],
+  time: number
+): CustomCanvasData {
   return {
     ...canvas,
     elements: canvas.elements.map((e) => {
@@ -412,6 +553,20 @@ export function AnimationTimeline() {
   const [autoKeyframe, setAutoKeyframe] = useState<boolean>(true);
   const [copiedPayload, setCopiedPayload] = useState<boolean>(false);
 
+  // Template variables state
+  const [variables, setVariables] = useState<Record<string, string>>(DEFAULT_TEMPLATE_VARIABLES);
+  const [showVariableModal, setShowVariableModal] = useState<boolean>(false);
+  const [newVarKey, setNewVarKey] = useState<string>("");
+  const [newVarValue, setNewVarValue] = useState<string>("");
+
+  // API Payload modal state (unparsed vs parsed and editable)
+  const [showApiPayloadModal, setShowApiPayloadModal] = useState<boolean>(false);
+  const [payloadMode, setPayloadMode] = useState<"unparsed" | "parsed">("unparsed");
+  const [editablePayloadJson, setEditablePayloadJson] = useState<string>("");
+  const [copiedJson, setCopiedJson] = useState<boolean>(false);
+  const [copiedCurl, setCopiedCurl] = useState<boolean>(false);
+  const [isTestingRender, setIsTestingRender] = useState<boolean>(false);
+
   // Drag & drop state for reordering layers / tracks
   const [draggedElementIndex, setDraggedElementIndex] = useState<number | null>(null);
   const [dragOverElementIndex, setDragOverElementIndex] = useState<number | null>(null);
@@ -431,7 +586,23 @@ export function AnimationTimeline() {
   } | null>(null);
 
   // Computed frame at current playhead time
-  const frame = useMemo(() => buildFrame(canvas, tracks, time), [canvas, tracks, time]);
+  const rawFrame = useMemo(() => buildFrame(canvas, tracks, time), [canvas, tracks, time]);
+
+  // Frame with variables parsed for live visual preview
+  const frame = useMemo(() => {
+    return {
+      ...rawFrame,
+      backgroundImageUrl: rawFrame.backgroundImageUrl
+        ? parseTemplateString(rawFrame.backgroundImageUrl, variables)
+        : undefined,
+      elements: rawFrame.elements.map((el) => ({
+        ...el,
+        content: el.content ? parseTemplateString(el.content, variables) : undefined,
+        imageUrl: el.imageUrl ? parseTemplateString(el.imageUrl, variables) : undefined,
+      })),
+    };
+  }, [rawFrame, variables]);
+
   const frameCount = Math.max(1, Math.ceil(duration / (1000 / fps)));
   const delays = useMemo(
     () => Array.from({ length: frameCount }, () => Math.round(1000 / fps)),
@@ -485,6 +656,30 @@ export function AnimationTimeline() {
     setSelectedKeyframeId(kf);
   };
 
+  // Variable management helpers
+  const handleAddVariable = () => {
+    const cleanKey = newVarKey.trim().replace(/^\{+|\}+$/g, "");
+    if (!cleanKey) return;
+    setVariables((prev) => ({ ...prev, [cleanKey]: newVarValue }));
+    setNewVarKey("");
+    setNewVarValue("");
+  };
+
+  const handleDeleteVariable = (keyToDelete: string) => {
+    setVariables((prev) => {
+      const copy = { ...prev };
+      delete copy[keyToDelete];
+      return copy;
+    });
+  };
+
+  const insertVariableIntoField = (varKey: string, field: "content" | "imageUrl") => {
+    if (!selectedElement) return;
+    const tag = `{${varKey}}`;
+    const currentValue = selectedElement[field] || "";
+    updateCurrentElement(selectedElement.id, { [field]: currentValue + tag });
+  };
+
   // Reorder elements (Layers & Tracks)
   const reorderElements = (fromIndex: number, toIndex: number) => {
     if (fromIndex === toIndex || fromIndex < 0 || toIndex < 0) return;
@@ -497,7 +692,7 @@ export function AnimationTimeline() {
     });
   };
 
-  // Timeline Ruler Scrubbing handler (click and drag to change timeline)
+  // Timeline Ruler Scrubbing handler
   const handleTimelineScrub = (ev: React.PointerEvent<HTMLDivElement>, rulerEl: HTMLDivElement) => {
     ev.preventDefault();
     const updateTimeFromX = (clientX: number) => {
@@ -643,7 +838,6 @@ export function AnimationTimeline() {
             ),
           }));
         } else {
-          // Add new keyframe
           const newKf: Keyframe = {
             id: `${id}-${Math.round(time)}-${Date.now()}`,
             time: Math.round(time),
@@ -671,7 +865,7 @@ export function AnimationTimeline() {
     id: string,
     mode: "move" | "resize"
   ) => {
-    const e = frame.elements.find((x) => x.id === id);
+    const e = rawFrame.elements.find((x) => x.id === id);
     const rect = previewRef.current?.getBoundingClientRect();
     if (!e || !rect) return;
     ev.stopPropagation();
@@ -755,19 +949,19 @@ export function AnimationTimeline() {
 
     if (type === "text") {
       Object.assign(base, {
-        content: "New Text Layer",
+        content: "New {userName} Layer",
         color: "#ffffff",
         fontSize: 32,
         fontWeight: 600,
       });
     } else if (type === "avatar" || type === "image") {
       Object.assign(base, {
-        imageUrl: "https://github.com/user-attachments/assets/ebbf178f-a0af-468c-bc6d-34f0502f30a8",
+        imageUrl: "{userAVTurl}",
         borderRadius: type === "avatar" ? 999 : 16,
       });
     } else if (type === "badge") {
       Object.assign(base, {
-        content: "★ FEATURED",
+        content: "★ {guildName}",
         color: "#ffffff",
         backgroundColor: "#8b5cf6",
         borderRadius: 8,
@@ -865,19 +1059,36 @@ export function AnimationTimeline() {
     setSelectedKeyframeId(null);
   };
 
-  // Export Animation
+  // Export Animation with variables resolved
   const exportAnimation = async () => {
     setExportError(null);
     setExporting(true);
     setExportProgress("Compiling frames on server...");
     try {
-      const frames = Array.from({ length: frameCount }, (_, i) =>
-        buildFrame(canvas, tracks, Math.min(duration - 1, Math.round((i * 1000) / fps)))
-      );
+      const frames = Array.from({ length: frameCount }, (_, i) => {
+        const raw = buildFrame(
+          canvas,
+          tracks,
+          Math.min(duration - 1, Math.round((i * 1000) / fps))
+        );
+        // Resolve all variables for export
+        return {
+          ...raw,
+          backgroundImageUrl: raw.backgroundImageUrl
+            ? parseTemplateString(raw.backgroundImageUrl, variables)
+            : undefined,
+          elements: raw.elements.map((el) => ({
+            ...el,
+            content: el.content ? parseTemplateString(el.content, variables) : undefined,
+            imageUrl: el.imageUrl ? parseTemplateString(el.imageUrl, variables) : undefined,
+          })),
+        };
+      });
+
       const payload = JSON.stringify({
         type: "animated",
         data: {
-          title: canvas.title,
+          title: parseTemplateString(canvas.title, variables),
           format,
           frames,
           delay: delays,
@@ -910,7 +1121,7 @@ export function AnimationTimeline() {
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       const safeName =
-        (canvas.title || "animated-banner")
+        (parseTemplateString(canvas.title, variables) || "animated-banner")
           .toLowerCase()
           .replace(/[^a-z0-9]+/g, "-")
           .replace(/^-+|-+$/g, "") || "animated-banner";
@@ -929,28 +1140,163 @@ export function AnimationTimeline() {
     }
   };
 
-  const copyApi = async () => {
-    const frames = Array.from({ length: frameCount }, (_, i) =>
-      buildFrame(canvas, tracks, Math.min(duration - 1, Math.round((i * 1000) / fps)))
-    );
-    await navigator.clipboard.writeText(
-      JSON.stringify(
-        {
-          type: "animated",
-          data: {
-            title: canvas.title,
-            format,
-            delay: delays,
-            loop: 0,
-            frames,
-          },
+  const generatePayload = useCallback(
+    (mode: "unparsed" | "parsed") => {
+      const isParsed = mode === "parsed";
+      const frames = Array.from({ length: frameCount }, (_, i) => {
+        const raw = buildFrame(
+          canvas,
+          tracks,
+          Math.min(duration - 1, Math.round((i * 1000) / fps))
+        );
+        if (!isParsed) {
+          return raw;
+        }
+        return {
+          ...raw,
+          backgroundImageUrl: raw.backgroundImageUrl
+            ? parseTemplateString(raw.backgroundImageUrl, variables)
+            : undefined,
+          elements: raw.elements.map((el) => ({
+            ...el,
+            content: el.content ? parseTemplateString(el.content, variables) : undefined,
+            imageUrl: el.imageUrl ? parseTemplateString(el.imageUrl, variables) : undefined,
+          })),
+        };
+      });
+
+      const payloadObj: any = {
+        type: "animated",
+        data: {
+          title: isParsed ? parseTemplateString(canvas.title, variables) : canvas.title,
+          format,
+          delay: delays,
+          loop: 0,
+          frames,
         },
-        null,
-        2
-      )
-    );
-    setCopiedPayload(true);
-    setTimeout(() => setCopiedPayload(false), 2500);
+      };
+
+      if (!isParsed) {
+        payloadObj.templateVariables = variables;
+      }
+
+      return JSON.stringify(payloadObj, null, 2);
+    },
+    [canvas, tracks, duration, fps, format, delays, frameCount, variables]
+  );
+
+  const openApiPayloadModal = (initialMode: "unparsed" | "parsed" = "unparsed") => {
+    setPayloadMode(initialMode);
+    setEditablePayloadJson(generatePayload(initialMode));
+    setShowApiPayloadModal(true);
+  };
+
+  const handleSwitchPayloadMode = (newMode: "unparsed" | "parsed") => {
+    setPayloadMode(newMode);
+    setEditablePayloadJson(generatePayload(newMode));
+  };
+
+  const handleCopyJson = async () => {
+    await navigator.clipboard.writeText(editablePayloadJson);
+    setCopiedJson(true);
+    setTimeout(() => setCopiedJson(false), 2000);
+  };
+
+  const handleCopyCurl = async () => {
+    let safeJson = editablePayloadJson;
+    try {
+      safeJson = JSON.stringify(JSON.parse(editablePayloadJson));
+    } catch {}
+    const mime = format === "gif" ? "image/gif" : "image/webp";
+    const curl = `curl -X POST http://localhost:3000/api/generate \\\n  -H "Content-Type: application/json" \\\n  -H "Accept: ${mime}" \\\n  -d '${safeJson.replace(/'/g, "'\\''")}' \\\n  --output animation.${format}`;
+    await navigator.clipboard.writeText(curl);
+    setCopiedCurl(true);
+    setTimeout(() => setCopiedCurl(false), 2000);
+  };
+
+  const handleDownloadPayloadJson = () => {
+    const blob = new Blob([editablePayloadJson], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `payload-${payloadMode}.json`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 2000);
+  };
+
+  const isJsonValid = useMemo(() => {
+    try {
+      JSON.parse(editablePayloadJson);
+      return true;
+    } catch {
+      return false;
+    }
+  }, [editablePayloadJson]);
+
+  const handleTestRenderFromEditor = async () => {
+    setExportError(null);
+    setIsTestingRender(true);
+    setExportProgress("Testing render from custom JSON payload...");
+    try {
+      const parsed = JSON.parse(editablePayloadJson);
+      const frames =
+        parsed.data?.frames?.map((frameItem: any) => ({
+          ...frameItem,
+          backgroundImageUrl: frameItem.backgroundImageUrl
+            ? parseTemplateString(frameItem.backgroundImageUrl, variables)
+            : undefined,
+          elements: frameItem.elements?.map((el: any) => ({
+            ...el,
+            content: el.content ? parseTemplateString(el.content, variables) : undefined,
+            imageUrl: el.imageUrl ? parseTemplateString(el.imageUrl, variables) : undefined,
+          })),
+        })) || parsed.data?.frames;
+
+      const payloadToSend = {
+        ...parsed,
+        data: {
+          ...parsed.data,
+          frames,
+        },
+      };
+
+      const r = await fetch("/api/generate", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: format === "gif" ? "image/gif" : "image/webp",
+        },
+        body: JSON.stringify(payloadToSend),
+      });
+
+      if (!r.ok) {
+        const text = await r.text();
+        let message = text;
+        try {
+          message = JSON.parse(text).error || text;
+        } catch {}
+        throw new Error(message || `Generation failed (${r.status})`);
+      }
+
+      const blob = await r.blob();
+      if (!blob.size) throw new Error("The server returned an empty file.");
+
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `custom-render.${format}`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 5000);
+    } catch (err: any) {
+      setExportError(err.message || String(err));
+    } finally {
+      setIsTestingRender(false);
+      setExportProgress("");
+    }
   };
 
   return (
@@ -969,13 +1315,23 @@ export function AnimationTimeline() {
               </span>
             </div>
             <p className="text-xs text-slate-400">
-              Interactive timeline, draggable tracks & layers, keyframe sliding & instant rendering
+              Interactive timeline, draggable tracks & layers, keyframe sliding, color palette & variable parsing
             </p>
           </div>
         </div>
 
-        {/* Quick format & render action */}
+        {/* Action Controls */}
         <div className="flex flex-wrap items-center gap-2">
+          {/* Variable Manager Button */}
+          <button
+            onClick={() => setShowVariableModal(true)}
+            className="flex items-center gap-1.5 rounded-xl border border-purple-500/30 bg-purple-950/40 px-3 py-2 text-xs font-semibold text-purple-200 hover:bg-purple-900/50 hover:border-purple-400 transition"
+            title="Quản lý biến mẫu ({userName}, {guildName}, {userAVTurl}...)"
+          >
+            <SlidersHorizontal className="h-3.5 w-3.5 text-purple-400" />
+            <span>Biến số ({Object.keys(variables).length})</span>
+          </button>
+
           {/* Format selector */}
           <div className="flex items-center rounded-xl bg-black/40 border border-white/10 p-0.5">
             <button
@@ -1001,12 +1357,12 @@ export function AnimationTimeline() {
           </div>
 
           <button
-            onClick={copyApi}
-            className="flex items-center gap-1.5 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs font-medium text-slate-300 hover:bg-white/10 transition"
-            title="Copy JSON request payload for API / Bot integrations"
+            onClick={() => openApiPayloadModal("unparsed")}
+            className="flex items-center gap-1.5 rounded-xl border border-purple-500/30 bg-purple-950/40 px-3 py-2 text-xs font-semibold text-purple-200 hover:bg-purple-900/50 hover:border-purple-400 transition"
+            title="Xem, cấu hình (chưa parse / đã parse) và xuất API JSON Payload"
           >
-            {copiedPayload ? <Check className="h-3.5 w-3.5 text-emerald-400" /> : <Code2 className="h-3.5 w-3.5" />}
-            <span>{copiedPayload ? "Copied!" : "API Payload"}</span>
+            <Code2 className="h-3.5 w-3.5 text-purple-400" />
+            <span>API Payload</span>
           </button>
 
           <button
@@ -1038,7 +1394,7 @@ export function AnimationTimeline() {
         </div>
       )}
 
-      {/* Main 3-Column Layout: Left (Layers & Presets) | Center (Canvas Viewport) | Right (Inspector) */}
+      {/* Main 3-Column Layout */}
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-[260px_1fr_320px]">
         {/* LEFT COLUMN: Layers & Presets */}
         <div className="space-y-4">
@@ -1146,6 +1502,7 @@ export function AnimationTimeline() {
                 const kfCount = track?.keyframes.length || 0;
                 const isDragging = draggedElementIndex === index;
                 const isOver = dragOverElementIndex === index;
+                const parsedContent = parseTemplateString(e.content, variables);
 
                 return (
                   <div
@@ -1193,7 +1550,7 @@ export function AnimationTimeline() {
                         {e.type.slice(0, 3)}
                       </span>
                       <span className="text-xs font-medium truncate">
-                        {e.content || e.id}
+                        {parsedContent || e.content || e.id}
                       </span>
                     </div>
                     <div className="flex items-center gap-1.5 flex-shrink-0">
@@ -1220,7 +1577,7 @@ export function AnimationTimeline() {
             <div className="mb-3 flex flex-wrap items-center justify-between gap-2 border-b border-white/10 pb-3">
               <div className="flex items-center gap-2">
                 <span className="text-xs font-semibold text-slate-200">
-                  {canvas.title}
+                  {parseTemplateString(canvas.title, variables)}
                 </span>
                 <span className="rounded bg-white/5 px-2 py-0.5 text-[10px] font-mono text-slate-400">
                   {canvas.width} × {canvas.height}px
@@ -1229,7 +1586,6 @@ export function AnimationTimeline() {
 
               {/* Zoom & Alignment Controls */}
               <div className="flex items-center gap-2">
-                {/* Alignment buttons for selected element */}
                 {selectedElement && (
                   <div className="flex items-center gap-1 bg-black/40 rounded-lg p-0.5 border border-white/10">
                     <button
@@ -1288,9 +1644,9 @@ export function AnimationTimeline() {
                 }}
               >
                 {/* Background animated image if specified */}
-                {canvas.backgroundImageUrl && (
+                {frame.backgroundImageUrl && (
                   <img
-                    src={canvas.backgroundImageUrl}
+                    src={frame.backgroundImageUrl}
                     alt=""
                     draggable={false}
                     className="absolute inset-0 h-full w-full object-cover pointer-events-none"
@@ -1394,7 +1750,6 @@ export function AnimationTimeline() {
                             >
                               <div className="h-1.5 w-1.5 rounded-full bg-white" />
                             </div>
-                            {/* Live coordinate indicator tag */}
                             <div className="absolute -top-6 left-0 rounded bg-black/80 px-1.5 py-0.5 text-[9px] font-mono text-purple-300 pointer-events-none whitespace-nowrap border border-purple-500/30">
                               X:{Math.round(e.x)} Y:{Math.round(e.y)} · {Math.round(e.width)}×
                               {Math.round(e.height)}
@@ -1448,7 +1803,7 @@ export function AnimationTimeline() {
             </div>
           </div>
 
-          {/* Interactive Multi-track Timeline with Drag & Drop Layer/Track Reordering & Scrubbing */}
+          {/* Interactive Multi-track Timeline */}
           <div className="rounded-2xl border border-white/10 bg-[#0e0a1e]/80 shadow-xl backdrop-blur-md overflow-hidden">
             <div className="flex items-center justify-between border-b border-white/10 px-4 py-2.5 bg-black/20">
               <div className="flex items-center gap-3">
@@ -1461,7 +1816,6 @@ export function AnimationTimeline() {
               </div>
 
               <div className="flex items-center gap-3">
-                {/* Auto-keyframe toggle */}
                 <label className="flex items-center gap-1.5 text-[11px] text-slate-400 cursor-pointer hover:text-slate-200">
                   <input
                     type="checkbox"
@@ -1491,7 +1845,7 @@ export function AnimationTimeline() {
                     <span>TRACK / LAYER</span>
                   </div>
 
-                  {/* Interactive Ruler Header: Click & Drag here to scrub Timeline! */}
+                  {/* Interactive Ruler Header */}
                   <div
                     ref={timelineRulerRef}
                     onPointerDown={(ev) => {
@@ -1502,7 +1856,6 @@ export function AnimationTimeline() {
                     className="relative h-8 cursor-ew-resize select-none bg-black/40 hover:bg-purple-950/20 transition group"
                     title="Nhấn và kéo rê ngang để thay đổi Timeline (Scrub Playhead)"
                   >
-                    {/* Time ticks across ruler */}
                     {Array.from({ length: 7 }, (_, i) => {
                       const m = Math.round((duration / 6) * i);
                       return (
@@ -1519,7 +1872,7 @@ export function AnimationTimeline() {
                       );
                     })}
 
-                    {/* Draggable Playhead Scrubber Badge on Ruler */}
+                    {/* Draggable Playhead Scrubber Badge */}
                     <div
                       className="absolute top-0 -translate-x-1/2 flex flex-col items-center pointer-events-none z-40 transition-transform"
                       style={{ left: `${(time / duration) * 100}%` }}
@@ -1532,13 +1885,14 @@ export function AnimationTimeline() {
                   </div>
                 </div>
 
-                {/* Track Rows with Drag-and-Drop Reordering and Keyframe Draggable Diamonds */}
+                {/* Track Rows */}
                 {canvas.elements.map((e, index) => {
                   const t = tracks.find((x) => x.elementId === e.id);
                   const isTrackSelected = selectedId === e.id;
                   const keyframes = t?.keyframes || [];
                   const isDragging = draggedElementIndex === index;
                   const isOver = dragOverElementIndex === index;
+                  const parsedContent = parseTemplateString(e.content, variables);
 
                   return (
                     <div
@@ -1577,7 +1931,7 @@ export function AnimationTimeline() {
                           : "hover:bg-white/[0.02]"
                       }`}
                     >
-                      {/* Track Header with Drag Handle (Kéo thả track lên xuống để đổi Layer) */}
+                      {/* Track Header with Drag Handle */}
                       <div
                         onClick={() => select(e.id)}
                         className={`flex items-center gap-1.5 p-2 text-left text-xs border-r border-white/5 cursor-pointer ${
@@ -1593,10 +1947,10 @@ export function AnimationTimeline() {
                         <span className="text-[9px] font-mono uppercase text-slate-500 px-1 py-0.5 rounded bg-white/5">
                           {e.type.slice(0, 3)}
                         </span>
-                        <span className="truncate flex-1">{e.content || e.id}</span>
+                        <span className="truncate flex-1">{parsedContent || e.content || e.id}</span>
                       </div>
 
-                      {/* Track keyframes lane (Click or drag anywhere in lane to scrub timeline!) */}
+                      {/* Track keyframes lane */}
                       <div
                         onPointerDown={(ev) => {
                           const laneEl = ev.currentTarget as HTMLDivElement;
@@ -1627,7 +1981,7 @@ export function AnimationTimeline() {
                           />
                         )}
 
-                        {/* Keyframe diamonds (Kéo hạt sang trái/phải để đổi Keyframe time) */}
+                        {/* Keyframe diamonds */}
                         {keyframes.map((k) => {
                           const isKfSelected = selectedKeyframeId === k.id && isTrackSelected;
                           return (
@@ -1658,7 +2012,7 @@ export function AnimationTimeline() {
 
         {/* RIGHT COLUMN: Properties & Keyframe Inspector */}
         <div className="space-y-4">
-          {/* Keyframe Inspector Panel (when keyframe is active) */}
+          {/* Keyframe Inspector Panel */}
           {selectedKeyframe && (
             <div className="rounded-2xl border border-purple-500/30 bg-purple-950/30 p-4 shadow-xl backdrop-blur-md space-y-3">
               <div className="flex items-center justify-between border-b border-purple-500/20 pb-2">
@@ -1788,61 +2142,99 @@ export function AnimationTimeline() {
                 </div>
               </div>
 
-              {/* Text content if text or badge */}
+              {/* Text content if text or badge with Variable insert chips */}
               {(selectedElement.type === "text" || selectedElement.type === "badge") && (
-                <div>
-                  <label className="block text-[11px] text-slate-400">
-                    Content
-                    <input
-                      type="text"
-                      value={selectedElement.content || ""}
-                      onChange={(e) => updateCurrentElement(selectedElement.id, { content: e.target.value })}
-                      className="mt-1 w-full rounded-lg border border-white/10 bg-black/40 px-2 py-1.5 text-xs text-white outline-none focus:border-purple-500"
-                    />
-                  </label>
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <label className="text-[11px] text-slate-400">Content (Nội dung)</label>
+                    <button
+                      type="button"
+                      onClick={() => setShowVariableModal(true)}
+                      className="text-[10px] text-purple-400 hover:text-purple-300 flex items-center gap-0.5"
+                    >
+                      <Plus className="h-3 w-3" />
+                      <span>Thêm biến</span>
+                    </button>
+                  </div>
+
+                  <input
+                    type="text"
+                    value={selectedElement.content || ""}
+                    onChange={(e) => updateCurrentElement(selectedElement.id, { content: e.target.value })}
+                    className="w-full rounded-lg border border-white/10 bg-black/40 px-2 py-1.5 text-xs text-white outline-none focus:border-purple-500"
+                  />
+
+                  {/* Variable quick insert chips */}
+                  <div className="flex flex-wrap items-center gap-1 pt-0.5">
+                    <span className="text-[10px] text-slate-500">Chèn:</span>
+                    {Object.keys(variables).map((varKey) => (
+                      <button
+                        key={varKey}
+                        type="button"
+                        onClick={() => insertVariableIntoField(varKey, "content")}
+                        className="rounded bg-purple-950/60 border border-purple-500/30 px-1.5 py-0.5 text-[10px] font-mono text-purple-300 hover:bg-purple-800 hover:text-white transition"
+                        title={`Chèn {${varKey}} = "${variables[varKey]}"`}
+                      >
+                        +{`{${varKey}}`}
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* Live parsed preview */}
+                  {selectedElement.content && selectedElement.content.includes("{") && (
+                    <div className="rounded-lg bg-black/40 border border-white/5 p-2 text-[11px] text-slate-300">
+                      <span className="text-[10px] font-semibold text-purple-400 uppercase tracking-wide block mb-0.5">
+                        👉 Đã parse:
+                      </span>
+                      <span className="break-words font-medium">
+                        {parseTemplateString(selectedElement.content, variables)}
+                      </span>
+                    </div>
+                  )}
                 </div>
               )}
 
-              {/* Typography options for text */}
+              {/* Typography & Color Palette for text */}
               {selectedElement.type === "text" && (
-                <div className="grid grid-cols-2 gap-2">
+                <div className="space-y-3 pt-2 border-t border-white/5">
+                  <div className="grid grid-cols-2 gap-2">
+                    <label className="block text-[11px] text-slate-400">
+                      Font Size
+                      <input
+                        type="number"
+                        value={selectedElement.fontSize || 32}
+                        onChange={(e) =>
+                          updateCurrentElement(selectedElement.id, { fontSize: Number(e.target.value) })
+                        }
+                        className="mt-1 w-full rounded-lg border border-white/10 bg-black/40 px-2 py-1.5 text-xs text-white outline-none focus:border-purple-500"
+                      />
+                    </label>
+                    <label className="block text-[11px] text-slate-400">
+                      Weight
+                      <select
+                        value={selectedElement.fontWeight || 500}
+                        onChange={(e) =>
+                          updateCurrentElement(selectedElement.id, { fontWeight: Number(e.target.value) })
+                        }
+                        className="mt-1 w-full rounded-lg border border-white/10 bg-black/40 px-2 py-1.5 text-xs text-white outline-none focus:border-purple-500"
+                      >
+                        <option value="400">Regular (400)</option>
+                        <option value="500">Medium (500)</option>
+                        <option value="600">SemiBold (600)</option>
+                        <option value="700">Bold (700)</option>
+                      </select>
+                    </label>
+                  </div>
+
+                  {/* Text Color with Color Palette */}
+                  <ColorPalettePicker
+                    label="Màu chữ (Text Color)"
+                    value={selectedElement.color || "#ffffff"}
+                    onChange={(newColor) => updateCurrentElement(selectedElement.id, { color: newColor })}
+                  />
+
                   <label className="block text-[11px] text-slate-400">
-                    Font Size
-                    <input
-                      type="number"
-                      value={selectedElement.fontSize || 32}
-                      onChange={(e) =>
-                        updateCurrentElement(selectedElement.id, { fontSize: Number(e.target.value) })
-                      }
-                      className="mt-1 w-full rounded-lg border border-white/10 bg-black/40 px-2 py-1.5 text-xs text-white outline-none focus:border-purple-500"
-                    />
-                  </label>
-                  <label className="block text-[11px] text-slate-400">
-                    Weight
-                    <select
-                      value={selectedElement.fontWeight || 500}
-                      onChange={(e) =>
-                        updateCurrentElement(selectedElement.id, { fontWeight: Number(e.target.value) })
-                      }
-                      className="mt-1 w-full rounded-lg border border-white/10 bg-black/40 px-2 py-1.5 text-xs text-white outline-none focus:border-purple-500"
-                    >
-                      <option value="400">Regular (400)</option>
-                      <option value="500">Medium (500)</option>
-                      <option value="600">SemiBold (600)</option>
-                      <option value="700">Bold (700)</option>
-                    </select>
-                  </label>
-                  <label className="block text-[11px] text-slate-400">
-                    Color
-                    <input
-                      type="text"
-                      value={selectedElement.color || "#ffffff"}
-                      onChange={(e) => updateCurrentElement(selectedElement.id, { color: e.target.value })}
-                      className="mt-1 w-full rounded-lg border border-white/10 bg-black/40 px-2 py-1.5 text-xs text-white outline-none focus:border-purple-500"
-                    />
-                  </label>
-                  <label className="block text-[11px] text-slate-400">
-                    Align
+                    Căn lề (Align)
                     <select
                       value={selectedElement.textAlign || "left"}
                       onChange={(e) =>
@@ -1852,25 +2244,71 @@ export function AnimationTimeline() {
                       }
                       className="mt-1 w-full rounded-lg border border-white/10 bg-black/40 px-2 py-1.5 text-xs text-white outline-none focus:border-purple-500"
                     >
-                      <option value="left">Left</option>
-                      <option value="center">Center</option>
-                      <option value="right">Right</option>
+                      <option value="left">Trái (Left)</option>
+                      <option value="center">Giữa (Center)</option>
+                      <option value="right">Phải (Right)</option>
                     </select>
                   </label>
                 </div>
               )}
 
-              {/* Image URL for avatar / image */}
+              {/* Image URL for avatar / image with Variable chips */}
               {(selectedElement.type === "image" || selectedElement.type === "avatar") && (
-                <div>
-                  <label className="block text-[11px] text-slate-400">
-                    Image URL
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <label className="text-[11px] text-slate-400">Image URL</label>
+                    <button
+                      type="button"
+                      onClick={() => setShowVariableModal(true)}
+                      className="text-[10px] text-purple-400 hover:text-purple-300 flex items-center gap-0.5"
+                    >
+                      <Plus className="h-3 w-3" />
+                      <span>Thêm biến</span>
+                    </button>
+                  </div>
+
+                  <input
+                    type="text"
+                    value={selectedElement.imageUrl || ""}
+                    onChange={(e) => updateCurrentElement(selectedElement.id, { imageUrl: e.target.value })}
+                    className="w-full rounded-lg border border-white/10 bg-black/40 px-2 py-1.5 text-xs text-white outline-none focus:border-purple-500"
+                    placeholder="https://... hoặc {userAVTurl}"
+                  />
+
+                  {/* Variable quick insert chips for image */}
+                  <div className="flex flex-wrap items-center gap-1 pt-0.5">
+                    <span className="text-[10px] text-slate-500">Chèn:</span>
+                    {Object.keys(variables).map((varKey) => (
+                      <button
+                        key={varKey}
+                        type="button"
+                        onClick={() => insertVariableIntoField(varKey, "imageUrl")}
+                        className="rounded bg-purple-950/60 border border-purple-500/30 px-1.5 py-0.5 text-[10px] font-mono text-purple-300 hover:bg-purple-800 hover:text-white transition"
+                        title={`Chèn {${varKey}}`}
+                      >
+                        +{`{${varKey}}`}
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* Live parsed preview */}
+                  {selectedElement.imageUrl && selectedElement.imageUrl.includes("{") && (
+                    <div className="rounded-lg bg-black/40 border border-white/5 p-2 text-[10px] text-slate-400 break-all font-mono">
+                      <span className="text-purple-400 font-semibold block mb-0.5">URL sau khi parse:</span>
+                      {parseTemplateString(selectedElement.imageUrl, variables)}
+                    </div>
+                  )}
+
+                  {/* Border radius */}
+                  <label className="block text-[11px] text-slate-400 pt-1">
+                    Bo góc (Border Radius)
                     <input
-                      type="text"
-                      value={selectedElement.imageUrl || ""}
-                      onChange={(e) => updateCurrentElement(selectedElement.id, { imageUrl: e.target.value })}
+                      type="number"
+                      value={selectedElement.borderRadius ?? (selectedElement.type === "avatar" ? 999 : 12)}
+                      onChange={(e) =>
+                        updateCurrentElement(selectedElement.id, { borderRadius: Number(e.target.value) })
+                      }
                       className="mt-1 w-full rounded-lg border border-white/10 bg-black/40 px-2 py-1.5 text-xs text-white outline-none focus:border-purple-500"
-                      placeholder="https://..."
                     />
                   </label>
                 </div>
@@ -1878,53 +2316,65 @@ export function AnimationTimeline() {
 
               {/* Progress properties */}
               {selectedElement.type === "progress" && (
-                <div className="space-y-2">
-                  <div className="flex justify-between text-[11px] text-slate-400">
-                    <span>Percent</span>
-                    <span className="font-mono">{selectedElement.progressPercent || 0}%</span>
-                  </div>
-                  <input
-                    type="range"
-                    min="0"
-                    max="100"
-                    value={selectedElement.progressPercent || 0}
-                    onChange={(e) =>
-                      updateCurrentElement(selectedElement.id, {
-                        progressPercent: Number(e.target.value),
-                      })
-                    }
-                    className="w-full accent-purple-500"
-                  />
-                  <label className="block text-[11px] text-slate-400">
-                    Progress Bar Color
+                <div className="space-y-3">
+                  <div className="space-y-1">
+                    <div className="flex justify-between text-[11px] text-slate-400">
+                      <span>Percent</span>
+                      <span className="font-mono">{selectedElement.progressPercent || 0}%</span>
+                    </div>
                     <input
-                      type="text"
-                      value={selectedElement.progressColor || "#a855f7"}
+                      type="range"
+                      min="0"
+                      max="100"
+                      value={selectedElement.progressPercent || 0}
                       onChange={(e) =>
-                        updateCurrentElement(selectedElement.id, { progressColor: e.target.value })
+                        updateCurrentElement(selectedElement.id, {
+                          progressPercent: Number(e.target.value),
+                        })
                       }
-                      className="mt-1 w-full rounded-lg border border-white/10 bg-black/40 px-2 py-1.5 text-xs text-white outline-none focus:border-purple-500"
+                      className="w-full accent-purple-500"
                     />
-                  </label>
+                  </div>
+
+                  <ColorPalettePicker
+                    label="Màu thanh chạy (Progress Bar Color)"
+                    value={selectedElement.progressColor || "#a855f7"}
+                    onChange={(newColor) =>
+                      updateCurrentElement(selectedElement.id, { progressColor: newColor })
+                    }
+                  />
+
+                  <ColorPalettePicker
+                    label="Màu nền thanh (Track Background)"
+                    value={selectedElement.backgroundColor || "rgba(255,255,255,0.1)"}
+                    onChange={(newColor) =>
+                      updateCurrentElement(selectedElement.id, { backgroundColor: newColor })
+                    }
+                  />
                 </div>
               )}
 
               {/* Colors & borders for Badge or Box */}
               {(selectedElement.type === "badge" || selectedElement.type === "box") && (
-                <div className="grid grid-cols-2 gap-2">
-                  <label className="block text-[11px] text-slate-400">
-                    Background
-                    <input
-                      type="text"
-                      value={selectedElement.backgroundColor || ""}
-                      onChange={(e) =>
-                        updateCurrentElement(selectedElement.id, { backgroundColor: e.target.value })
-                      }
-                      className="mt-1 w-full rounded-lg border border-white/10 bg-black/40 px-2 py-1.5 text-xs text-white outline-none focus:border-purple-500"
+                <div className="space-y-3">
+                  <ColorPalettePicker
+                    label="Màu nền (Background Color)"
+                    value={selectedElement.backgroundColor || "#7c3aed"}
+                    onChange={(newColor) =>
+                      updateCurrentElement(selectedElement.id, { backgroundColor: newColor })
+                    }
+                  />
+
+                  {selectedElement.type === "badge" && (
+                    <ColorPalettePicker
+                      label="Màu chữ (Text Color)"
+                      value={selectedElement.color || "#ffffff"}
+                      onChange={(newColor) => updateCurrentElement(selectedElement.id, { color: newColor })}
                     />
-                  </label>
+                  )}
+
                   <label className="block text-[11px] text-slate-400">
-                    Border
+                    Border (Viền)
                     <input
                       type="text"
                       value={selectedElement.border || ""}
@@ -2023,13 +2473,261 @@ export function AnimationTimeline() {
                     setCanvas((c) => ({ ...c, backgroundImageUrl: e.target.value || undefined }))
                   }
                   className="mt-1 w-full rounded-lg border border-white/10 bg-black/40 px-2 py-1.5 text-xs text-white outline-none focus:border-purple-500"
-                  placeholder="https://.../ambient.gif"
+                  placeholder="https://.../ambient.gif hoặc {bgUrl}"
                 />
               </label>
             </div>
           </div>
         </div>
       </div>
+
+      {/* Template Variables Management Modal */}
+      {showVariableModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm">
+          <div className="relative w-full max-w-lg rounded-2xl border border-purple-500/30 bg-[#0f0b21] p-6 shadow-2xl space-y-4">
+            <div className="flex items-center justify-between border-b border-white/10 pb-3">
+              <div className="flex items-center gap-2">
+                <SlidersHorizontal className="h-5 w-5 text-purple-400" />
+                <h3 className="text-base font-bold text-white">Quản lý Biến số (Template Variables)</h3>
+              </div>
+              <button
+                onClick={() => setShowVariableModal(false)}
+                className="rounded-lg p-1 text-slate-400 hover:text-white hover:bg-white/10"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            <p className="text-xs text-slate-400 leading-relaxed">
+              Các biến số sẽ tự động được parse trong <strong>Text Content</strong> và <strong>Image URL</strong> khi nhập định dạng <code className="text-purple-300 font-mono font-semibold">{"{tênBiến}"}</code>.
+            </p>
+
+            {/* List of existing variables */}
+            <div className="space-y-2 max-h-[280px] overflow-y-auto pr-1">
+              {Object.entries(variables).map(([key, val]) => (
+                <div
+                  key={key}
+                  className="flex items-center gap-2 rounded-xl border border-white/10 bg-black/40 p-2.5"
+                >
+                  <div className="w-28 flex-shrink-0">
+                    <span className="text-xs font-mono font-bold text-purple-300 block truncate">
+                      {`{${key}}`}
+                    </span>
+                  </div>
+                  <input
+                    type="text"
+                    value={val}
+                    onChange={(e) => {
+                      const updatedValue = e.target.value;
+                      setVariables((prev) => ({ ...prev, [key]: updatedValue }));
+                    }}
+                    className="w-full rounded-lg border border-white/10 bg-white/5 px-2.5 py-1 text-xs text-white outline-none focus:border-purple-500 font-mono truncate"
+                  />
+                  <button
+                    onClick={() => handleDeleteVariable(key)}
+                    className="rounded p-1 text-red-400 hover:text-red-300 hover:bg-red-500/10 flex-shrink-0"
+                    title="Xóa biến"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+              ))}
+            </div>
+
+            {/* Add new variable section */}
+            <div className="rounded-xl border border-purple-500/20 bg-purple-950/20 p-3 space-y-2">
+              <span className="text-xs font-semibold text-purple-300 block">Thêm biến mới:</span>
+              <div className="grid grid-cols-[130px_1fr_auto] gap-2">
+                <input
+                  type="text"
+                  placeholder="tênBiến (vd: role)"
+                  value={newVarKey}
+                  onChange={(e) => setNewVarKey(e.target.value)}
+                  className="rounded-lg border border-white/10 bg-black/50 px-2.5 py-1.5 text-xs text-white outline-none focus:border-purple-500 font-mono"
+                />
+                <input
+                  type="text"
+                  placeholder="giá trị (vd: Admin / URL)"
+                  value={newVarValue}
+                  onChange={(e) => setNewVarValue(e.target.value)}
+                  className="rounded-lg border border-white/10 bg-black/50 px-2.5 py-1.5 text-xs text-white outline-none focus:border-purple-500"
+                />
+                <button
+                  onClick={handleAddVariable}
+                  disabled={!newVarKey.trim()}
+                  className="rounded-lg bg-purple-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-purple-500 disabled:opacity-50 transition"
+                >
+                  Thêm
+                </button>
+              </div>
+            </div>
+
+            {/* Modal actions */}
+            <div className="flex items-center justify-between border-t border-white/10 pt-3">
+              <button
+                onClick={() => setVariables(DEFAULT_TEMPLATE_VARIABLES)}
+                className="flex items-center gap-1.5 text-xs text-slate-400 hover:text-white transition"
+              >
+                <RefreshCw className="h-3 w-3" />
+                <span>Khôi phục mặc định</span>
+              </button>
+
+              <button
+                onClick={() => setShowVariableModal(false)}
+                className="rounded-xl bg-purple-600 px-4 py-1.5 text-xs font-semibold text-white shadow-md hover:bg-purple-500 transition"
+              >
+                Xong
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* API Payload Inspector & Exporter Modal */}
+      {showApiPayloadModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 p-4 backdrop-blur-md">
+          <div className="relative flex flex-col w-full max-w-3xl max-h-[90vh] rounded-2xl border border-purple-500/30 bg-[#0e0a1f] p-5 shadow-2xl space-y-4">
+            {/* Header */}
+            <div className="flex items-center justify-between border-b border-white/10 pb-3">
+              <div className="flex items-center gap-2">
+                <Code2 className="h-5 w-5 text-purple-400" />
+                <div>
+                  <h3 className="text-base font-bold text-white">API Payload Inspector & Exporter</h3>
+                  <p className="text-[11px] text-slate-400">
+                    Cấu hình và xuất JSON payload gửi tới <code className="text-purple-300 font-mono">POST /api/generate</code>
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowApiPayloadModal(false)}
+                className="rounded-lg p-1 text-slate-400 hover:text-white hover:bg-white/10"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            {/* Mode Switcher: Chưa parse (Raw) vs Đã parse (Resolved) */}
+            <div className="flex flex-wrap items-center justify-between gap-2 bg-black/40 p-2 rounded-xl border border-white/10">
+              <div className="flex items-center gap-1.5">
+                <span className="text-xs text-slate-400 font-medium mr-1">Chế độ xuất:</span>
+                <button
+                  type="button"
+                  onClick={() => handleSwitchPayloadMode("unparsed")}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition ${
+                    payloadMode === "unparsed"
+                      ? "bg-purple-600 text-white shadow-sm"
+                      : "text-slate-400 hover:text-white hover:bg-white/5"
+                  }`}
+                >
+                  📄 Chưa parse (Template {"{vars}"})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleSwitchPayloadMode("parsed")}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition ${
+                    payloadMode === "parsed"
+                      ? "bg-purple-600 text-white shadow-sm"
+                      : "text-slate-400 hover:text-white hover:bg-white/5"
+                  }`}
+                >
+                  🚀 Đã parse (Resolved Values)
+                </button>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <span
+                  className={`text-[11px] font-mono px-2 py-0.5 rounded ${
+                    isJsonValid
+                      ? "bg-emerald-950/60 text-emerald-300 border border-emerald-500/30"
+                      : "bg-red-950/60 text-red-300 border border-red-500/30"
+                  }`}
+                >
+                  {isJsonValid ? "✅ JSON hợp lệ" : "❌ Cú pháp JSON lỗi"}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setEditablePayloadJson(generatePayload(payloadMode))}
+                  className="flex items-center gap-1 text-[11px] text-slate-400 hover:text-white transition px-2 py-1 rounded hover:bg-white/5"
+                  title="Khôi phục lại payload gốc theo canvas hiện tại"
+                >
+                  <RotateCcw className="h-3 w-3" />
+                  <span>Đặt lại</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Editable JSON Area */}
+            <div className="relative flex-1 min-h-[300px] flex flex-col">
+              <div className="flex items-center justify-between text-[11px] text-slate-400 pb-1 px-1">
+                <span>Nội dung JSON (có thể chỉnh sửa trực tiếp):</span>
+                <span className="font-mono text-[10px] text-slate-500">
+                  {editablePayloadJson.length} ký tự
+                </span>
+              </div>
+              <textarea
+                value={editablePayloadJson}
+                onChange={(e) => setEditablePayloadJson(e.target.value)}
+                spellCheck={false}
+                className="w-full flex-1 min-h-[280px] max-h-[420px] rounded-xl border border-white/10 bg-black/60 p-3 font-mono text-xs text-purple-200 outline-none focus:border-purple-500/60 resize-y leading-relaxed select-text"
+              />
+            </div>
+
+            {/* Modal Actions */}
+            <div className="flex flex-wrap items-center justify-between gap-2 border-t border-white/10 pt-3">
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={handleDownloadPayloadJson}
+                  className="flex items-center gap-1.5 rounded-xl border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-medium text-slate-300 hover:bg-white/10 transition"
+                >
+                  <Download className="h-3.5 w-3.5" />
+                  <span>Tải .json</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleCopyCurl}
+                  className="flex items-center gap-1.5 rounded-xl border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-medium text-slate-300 hover:bg-white/10 transition"
+                  title="Sao chép lệnh cURL gọi API"
+                >
+                  {copiedCurl ? (
+                    <Check className="h-3.5 w-3.5 text-emerald-400" />
+                  ) : (
+                    <Terminal className="h-3.5 w-3.5 text-indigo-400" />
+                  )}
+                  <span>{copiedCurl ? "Đã chép cURL!" : "Sao chép cURL"}</span>
+                </button>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={handleTestRenderFromEditor}
+                  disabled={isTestingRender || !isJsonValid}
+                  className="flex items-center gap-1.5 rounded-xl border border-purple-500/40 bg-purple-950/50 px-3.5 py-1.5 text-xs font-semibold text-purple-200 hover:bg-purple-900/60 disabled:opacity-50 transition"
+                  title="Chạy render trực tiếp từ JSON đang sửa"
+                >
+                  {isTestingRender ? (
+                    <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-purple-300 border-t-transparent" />
+                  ) : (
+                    <Play className="h-3.5 w-3.5 fill-purple-300 text-purple-300" />
+                  )}
+                  <span>{isTestingRender ? "Đang render..." : "Render thử JSON"}</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleCopyJson}
+                  className="flex items-center gap-1.5 rounded-xl bg-purple-600 px-4 py-1.5 text-xs font-bold text-white shadow-md hover:bg-purple-500 transition"
+                >
+                  {copiedJson ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
+                  <span>{copiedJson ? "Đã sao chép!" : "Sao chép JSON"}</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
