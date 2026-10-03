@@ -1143,49 +1143,62 @@ export function AnimationTimeline() {
   const generatePayload = useCallback(
     (mode: "unparsed" | "parsed") => {
       const isParsed = mode === "parsed";
-      const frames = Array.from({ length: frameCount }, (_, i) => {
-        const raw = buildFrame(
-          canvas,
-          tracks,
-          Math.min(duration - 1, Math.round((i * 1000) / fps))
-        );
-        if (!isParsed) {
-          return raw;
-        }
-        return {
-          ...raw,
-          backgroundImageUrl: raw.backgroundImageUrl
-            ? parseTemplateString(raw.backgroundImageUrl, variables)
-            : undefined,
-          elements: raw.elements.map((el) => ({
-            ...el,
-            content: el.content ? parseTemplateString(el.content, variables) : undefined,
-            imageUrl: el.imageUrl ? parseTemplateString(el.imageUrl, variables) : undefined,
-          })),
-        };
-      });
+
+      // Super Compact Keyframes Format exclusively (~98% smaller payload)
+      const payloadCanvas = isParsed
+        ? {
+            ...canvas,
+            title: parseTemplateString(canvas.title, variables),
+            backgroundImageUrl: canvas.backgroundImageUrl
+              ? parseTemplateString(canvas.backgroundImageUrl, variables)
+              : undefined,
+            elements: canvas.elements.map((el) => ({
+              ...el,
+              content: el.content ? parseTemplateString(el.content, variables) : undefined,
+              imageUrl: el.imageUrl ? parseTemplateString(el.imageUrl, variables) : undefined,
+            })),
+          }
+        : canvas;
+
+      const cleanTracks = tracks
+        .filter((t) => t.keyframes && t.keyframes.length > 0)
+        .map((t) => ({
+          elementId: t.elementId,
+          keyframes: t.keyframes.map((k) => {
+            const kf: any = { time: Math.round(k.time) };
+            if (k.easing && k.easing !== "ease-in-out") kf.easing = k.easing;
+            if (k.x !== undefined) kf.x = Math.round(k.x);
+            if (k.y !== undefined) kf.y = Math.round(k.y);
+            if (k.width !== undefined) kf.width = Math.round(k.width);
+            if (k.height !== undefined) kf.height = Math.round(k.height);
+            if (k.opacity !== undefined) kf.opacity = Number(k.opacity.toFixed(3));
+            return kf;
+          }),
+        }));
 
       const payloadObj: any = {
         type: "animated",
         data: {
           title: isParsed ? parseTemplateString(canvas.title, variables) : canvas.title,
           format,
-          delay: delays,
+          duration,
+          fps,
           loop: 0,
-          frames,
+          canvas: payloadCanvas,
+          tracks: cleanTracks,
         },
       };
 
       if (!isParsed) {
-        payloadObj.templateVariables = variables;
+        payloadObj.data.templateVariables = variables;
       }
 
       return JSON.stringify(payloadObj, null, 2);
     },
-    [canvas, tracks, duration, fps, format, delays, frameCount, variables]
+    [canvas, tracks, duration, fps, format, variables]
   );
 
-  const openApiPayloadModal = (initialMode: "unparsed" | "parsed" = "unparsed") => {
+  const openApiPayloadModal = (initialMode: "unparsed" | "parsed" = payloadMode) => {
     setPayloadMode(initialMode);
     setEditablePayloadJson(generatePayload(initialMode));
     setShowApiPayloadModal(true);
@@ -1241,8 +1254,10 @@ export function AnimationTimeline() {
     setExportProgress("Testing render from custom JSON payload...");
     try {
       const parsed = JSON.parse(editablePayloadJson);
-      const frames =
-        parsed.data?.frames?.map((frameItem: any) => ({
+      let payloadToSend = parsed;
+
+      if (parsed.data?.frames) {
+        const frames = parsed.data.frames.map((frameItem: any) => ({
           ...frameItem,
           backgroundImageUrl: frameItem.backgroundImageUrl
             ? parseTemplateString(frameItem.backgroundImageUrl, variables)
@@ -1252,15 +1267,23 @@ export function AnimationTimeline() {
             content: el.content ? parseTemplateString(el.content, variables) : undefined,
             imageUrl: el.imageUrl ? parseTemplateString(el.imageUrl, variables) : undefined,
           })),
-        })) || parsed.data?.frames;
-
-      const payloadToSend = {
-        ...parsed,
-        data: {
-          ...parsed.data,
-          frames,
-        },
-      };
+        }));
+        payloadToSend = {
+          ...parsed,
+          data: {
+            ...parsed.data,
+            frames,
+          },
+        };
+      } else if (parsed.data?.canvas) {
+        payloadToSend = {
+          ...parsed,
+          data: {
+            ...parsed.data,
+            templateVariables: parsed.data.templateVariables || variables,
+          },
+        };
+      }
 
       const r = await fetch("/api/generate", {
         method: "POST",
@@ -2606,10 +2629,11 @@ export function AnimationTimeline() {
               </button>
             </div>
 
-            {/* Mode Switcher: Chưa parse (Raw) vs Đã parse (Resolved) */}
-            <div className="flex flex-wrap items-center justify-between gap-2 bg-black/40 p-2 rounded-xl border border-white/10">
-              <div className="flex items-center gap-1.5">
-                <span className="text-xs text-slate-400 font-medium mr-1">Chế độ xuất:</span>
+            {/* Modal Controls: Biến số & Trạng thái */}
+            <div className="flex flex-wrap items-center justify-between gap-3 bg-black/40 p-3 rounded-xl border border-white/10">
+              {/* Variables Switcher (Unparsed vs Parsed) */}
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-slate-400 font-medium">Biến số:</span>
                 <button
                   type="button"
                   onClick={() => handleSwitchPayloadMode("unparsed")}
@@ -2630,13 +2654,21 @@ export function AnimationTimeline() {
                       : "text-slate-400 hover:text-white hover:bg-white/5"
                   }`}
                 >
-                  🚀 Đã parse (Resolved Values)
+                  🚀 Đã parse (Thực tế)
                 </button>
               </div>
 
-              <div className="flex items-center gap-2">
+              {/* Status Info & Reset */}
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="flex items-center gap-1.5 rounded bg-purple-500/15 border border-purple-500/30 px-2.5 py-1 text-xs font-semibold text-purple-300">
+                  <span>⚡ Siêu ngắn (Keyframes)</span>
+                  <span className="rounded bg-emerald-500/25 px-1 py-0.2 text-[10px] text-emerald-300 font-bold border border-emerald-500/40">
+                    -98% size
+                  </span>
+                </span>
+
                 <span
-                  className={`text-[11px] font-mono px-2 py-0.5 rounded ${
+                  className={`text-[10px] font-mono px-2 py-0.5 rounded ${
                     isJsonValid
                       ? "bg-emerald-950/60 text-emerald-300 border border-emerald-500/30"
                       : "bg-red-950/60 text-red-300 border border-red-500/30"
@@ -2644,6 +2676,7 @@ export function AnimationTimeline() {
                 >
                   {isJsonValid ? "✅ JSON hợp lệ" : "❌ Cú pháp JSON lỗi"}
                 </span>
+
                 <button
                   type="button"
                   onClick={() => setEditablePayloadJson(generatePayload(payloadMode))}

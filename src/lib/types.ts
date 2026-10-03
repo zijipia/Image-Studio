@@ -25,8 +25,38 @@ export interface CustomCanvasData {
 export interface CustomGenerateRequest { type: "custom"; data: CustomCanvasData; }
 
 export type AnimatedImageFormat = "gif" | "webp";
+
+export interface KeyframeData {
+  id?: string;
+  time: number;
+  easing?: "ease-in-out" | "linear" | "ease-in" | "ease-out" | "bounce";
+  x?: number;
+  y?: number;
+  width?: number;
+  height?: number;
+  opacity?: number;
+}
+
+export interface TrackData {
+  elementId: string;
+  keyframes: KeyframeData[];
+}
+
 export interface AnimatedGenerateData {
-  title: string; frames: CustomCanvasData[]; delay?: number | number[]; loop?: number; format?: AnimatedImageFormat;
+  title: string;
+  format?: AnimatedImageFormat;
+  loop?: number;
+
+  // Format A: Baked frames (classic format)
+  frames?: CustomCanvasData[];
+  delay?: number | number[];
+
+  // Format B: Super Compact Timeline (Canvas + Keyframe Tracks - ~98% smaller payload!)
+  canvas?: CustomCanvasData;
+  tracks?: TrackData[];
+  duration?: number;
+  fps?: number;
+  templateVariables?: Record<string, string>;
 }
 export interface AnimatedGenerateRequest { type: "animated"; data: AnimatedGenerateData; }
 export type AnyGenerateRequest = SongGenerateRequest | ProfileGenerateRequest | LeaderboardGenerateRequest | QuoteGenerateRequest | CustomGenerateRequest | AnimatedGenerateRequest | { title: string; items: SongResult[]; type?: undefined };

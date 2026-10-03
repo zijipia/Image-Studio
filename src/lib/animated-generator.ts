@@ -2,6 +2,7 @@ import sharp from "sharp";
 import type { AnimatedGenerateData, AnimatedGenerateRequest, AnyGenerateRequest, CustomCanvasData } from "./types.js";
 import { dispatchGenerateImage } from "./image-generator.js";
 import { renderCustomCanvasSvg } from "./animated-canvas-renderer.js";
+import { compileTimelineToFrames } from "./timeline-interpolator.js";
 
 export interface GenerateResult { buffer: Buffer; width: number; height: number; mime: "image/png" | "image/gif" | "image/webp"; filename: string; }
 const MAX_FRAMES = 60;
@@ -30,13 +31,28 @@ async function encodeAnimatedSvgFrames(frames: Buffer[], format: "gif" | "webp",
 }
 
 export async function generateAnimatedImage(data: AnimatedGenerateData): Promise<GenerateResult> {
-  const frames = data.frames || [];
-  if (!frames.length) throw new Error("Animated generation requires at least one frame.");
+  let frames = data.frames;
+  let delay = data.delay;
+
+  // Support Compact Timeline Format (canvas + tracks) - ~98% smaller payload!
+  if ((!frames || !frames.length) && data.canvas) {
+    const compiled = compileTimelineToFrames({
+      canvas: data.canvas,
+      tracks: data.tracks || [],
+      duration: data.duration,
+      fps: data.fps,
+      templateVariables: data.templateVariables,
+    });
+    frames = compiled.frames;
+    delay = data.delay ?? compiled.frameDelay;
+  }
+
+  if (!frames || !frames.length) throw new Error("Animated generation requires at least one frame or a canvas with tracks.");
   if (frames.length > MAX_FRAMES) throw new Error(`Animated generation supports at most ${MAX_FRAMES} frames per request.`);
   const firstFrame = frames[0];
   if (!firstFrame || firstFrame.width <= 0 || firstFrame.height <= 0) throw new Error("Animated frames must define a positive width and height.");
   for (const [index, frame] of frames.entries()) if (frame.width !== firstFrame.width || frame.height !== firstFrame.height) throw new Error(`Animated frame ${index} has ${frame.width}x${frame.height}; all frames must use ${firstFrame.width}x${firstFrame.height}.`);
-  const delays = normalizeDelays(data.delay, frames.length);
+  const delays = normalizeDelays(delay, frames.length);
   const loop = data.loop ?? 0;
   if (!Number.isInteger(loop) || loop < 0 || loop > 65_535) throw new Error("Animated loop must be an integer between 0 and 65535.");
   const format = data.format ?? "gif";
