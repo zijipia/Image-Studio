@@ -344,7 +344,10 @@ export function AnimationTimeline() {
 
   const selectedElement = canvas.elements.find((e) => e.id === selectedId) ?? canvas.elements[0];
   const selectedTrack = tracks.find((t) => t.elementId === selectedId);
-  const selectedKeyframe = selectedTrack?.keyframes.find((k) => k.id === selectedKeyframeId) ?? null;
+  const selectedKeyframe =
+    selectedTrack?.keyframes.find(
+      (k) => (k.id || `${selectedTrack.elementId}-${k.time}`) === selectedKeyframeId
+    ) ?? null;
 
   // Playhead loop animation
   useEffect(() => {
@@ -467,7 +470,9 @@ export function AnimationTimeline() {
       updateTrack(elementId, (t) => ({
         ...t,
         keyframes: t.keyframes
-          .map((k) => (k.id === keyframeId ? { ...k, time: newTime } : k))
+          .map((k) =>
+            (k.id || `${elementId}-${k.time}`) === keyframeId ? { ...k, time: newTime } : k
+          )
           .sort((a, b) => a.time - b.time),
       }));
       setTime(newTime);
@@ -513,7 +518,9 @@ export function AnimationTimeline() {
     if (!selectedKeyframeId) return;
     updateTrack(selectedId, (t) => ({
       ...t,
-      keyframes: t.keyframes.map((k) => (k.id === selectedKeyframeId ? { ...k, [p]: v } : k)),
+      keyframes: t.keyframes.map((k) =>
+        (k.id || `${selectedId}-${k.time}`) === selectedKeyframeId ? { ...k, [p]: v } : k
+      ),
     }));
   };
 
@@ -523,7 +530,9 @@ export function AnimationTimeline() {
     updateTrack(selectedId, (t) => ({
       ...t,
       keyframes: t.keyframes
-        .map((k) => (k.id === selectedKeyframeId ? { ...k, time: n } : k))
+        .map((k) =>
+          (k.id || `${selectedId}-${k.time}`) === selectedKeyframeId ? { ...k, time: n } : k
+        )
         .sort((a, b) => a.time - b.time),
     }));
     setTime(n);
@@ -533,7 +542,9 @@ export function AnimationTimeline() {
     if (!kfId || !selectedTrack || selectedTrack.keyframes.length <= 1) return;
     updateTrack(selectedId, (t) => ({
       ...t,
-      keyframes: t.keyframes.filter((k) => k.id !== kfId),
+      keyframes: t.keyframes.filter(
+        (k) => (k.id || `${selectedId}-${k.time}`) !== kfId
+      ),
     }));
     setSelectedKeyframeId(null);
   };
@@ -1883,6 +1894,7 @@ export function AnimationTimeline() {
                         {/* Keyframe diamonds */}
                         {keyframes.map((k) => {
                           const kfId = k.id || `${e.id}-${k.time}`;
+                          const isKfSelected = selectedKeyframeId === kfId && isTrackSelected;
                           return (
                             <div
                               key={kfId}
