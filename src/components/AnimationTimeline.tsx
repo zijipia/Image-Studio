@@ -102,7 +102,7 @@ const PRESETS: AnimationPreset[] = [
           y: 40,
           width: 140,
           height: 140,
-          imageUrl: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=300&h=300&fit=crop",
+          imageUrl: "https://github.com/user-attachments/assets/ebbf178f-a0af-468c-bc6d-34f0502f30a8",
           borderRadius: 999,
           border: "4px solid rgba(168, 85, 247, 0.6)",
         },
@@ -195,7 +195,7 @@ const PRESETS: AnimationPreset[] = [
           y: 40,
           width: 140,
           height: 140,
-          imageUrl: "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=300&h=300&fit=crop",
+          imageUrl: "https://raw.githubusercontent.com/zijipia/zijipia/refs/heads/main/Assets/zilove.png",
           borderRadius: 20,
           border: "2px solid rgba(52, 211, 153, 0.4)",
         },
@@ -762,7 +762,7 @@ export function AnimationTimeline() {
       });
     } else if (type === "avatar" || type === "image") {
       Object.assign(base, {
-        imageUrl: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=300&h=300&fit=crop",
+        imageUrl: "https://github.com/user-attachments/assets/ebbf178f-a0af-468c-bc6d-34f0502f30a8",
         borderRadius: type === "avatar" ? 999 : 16,
       });
     } else if (type === "badge") {
