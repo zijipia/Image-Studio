@@ -1,4 +1,6 @@
-import type { CustomCanvasData, ElementTransform } from "./types.js";
+import type { CustomCanvasData, Transform, ElementTransform } from "./types.js";
+
+export type { Transform, ElementTransform };
 
 export type KeyframeProperty =
   | "x"
@@ -50,7 +52,7 @@ export interface Keyframe {
   scaleY?: number;
   anchorX?: number;
   anchorY?: number;
-  transform?: Partial<ElementTransform>;
+  transform?: Partial<Transform>;
 
   // Appearance
   opacity?: number;
@@ -235,6 +237,32 @@ export function propertyColorValue(
   return lerpColor(colA, colB, eased);
 }
 
+export function propertyStringValue(
+  track: Track | undefined,
+  time: number,
+  p: "textShadow",
+  fallback: string | undefined
+): string | undefined {
+  if (!track || !track.keyframes.length) return fallback;
+  const keyframesWithProp = track.keyframes.filter((k) => typeof (k as any)[p] === "string" && (k as any)[p] !== undefined);
+  if (!keyframesWithProp.length) return fallback;
+
+  const f = [...keyframesWithProp].sort((a, b) => a.time - b.time);
+  if (time <= f[0].time) return (f[0] as any)[p] ?? fallback;
+  if (time >= f[f.length - 1].time) return (f[f.length - 1] as any)[p] ?? fallback;
+
+  const i = f.findIndex((x) => x.time >= time);
+  const a = f[i - 1];
+  const b = f[i];
+  const valA = (a as any)[p] ?? fallback;
+  const valB = (b as any)[p] ?? fallback;
+  if (!valA || !valB) return valB || valA || fallback;
+
+  const normalized = (time - a.time) / Math.max(1, b.time - a.time);
+  const eased = applyEasing(normalized, b.easing ?? "ease-in-out");
+  return eased < 0.5 ? valA : valB;
+}
+
 function hasKeyframeProp(track: Track | undefined, p: string): boolean {
   if (!track || !track.keyframes) return false;
   return track.keyframes.some((k) => (k as any)[p] !== undefined || (k.transform && (k.transform as any)[p] !== undefined));
@@ -288,6 +316,9 @@ export function buildFrame(
       const lineHeight = (e.lineHeight !== undefined || hasKeyframeProp(t, "lineHeight"))
         ? Number(propertyValue(t, time, "lineHeight", e.lineHeight ?? 1.2).toFixed(2))
         : e.lineHeight;
+      const textShadow = (e.textShadow !== undefined || hasKeyframeProp(t, "textShadow"))
+        ? propertyStringValue(t, time, "textShadow", e.textShadow)
+        : e.textShadow;
 
       // Color & Glow
       const color = propertyColorValue(t, time, "color", e.color);
@@ -298,7 +329,7 @@ export function buildFrame(
         : e.glowBlur;
 
       // Unified Transform object
-      const transform: ElementTransform = {
+      const transform: Transform = {
         x,
         y,
         width,
@@ -330,6 +361,7 @@ export function buildFrame(
         fontSize,
         letterSpacing,
         lineHeight,
+        textShadow,
         color,
         backgroundColor,
         glowColor,

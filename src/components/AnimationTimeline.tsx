@@ -1,8 +1,8 @@
 import React, { useEffect, useMemo, useRef, useState, useCallback } from "react";
-import type { CustomCanvasData, CustomElement, CustomElementType } from "../lib/types";
+import type { CustomCanvasData, CustomElement, CustomElementType, Transform } from "../lib/types";
 import { recordGeneratedImage } from "../lib/use-stats";
 import { TextShadowControlPanel } from "./TextShadowControlPanel";
-import { computeElementTextShadow } from "../lib/text-effects";
+import { computeElementTextShadow, TEXT_SHADOW_PRESETS } from "../lib/text-effects";
 import {
   Film,
   Play,
@@ -63,6 +63,7 @@ import {
   buildFrame,
   propertyValue,
   propertyColorValue,
+  propertyStringValue,
   applyEasing,
   clamp,
   lerp,
@@ -72,7 +73,7 @@ import {
   type Track,
 } from "../lib/timeline-interpolator";
 
-export type { KeyframeProperty, EasingType, Keyframe, Track };
+export type { KeyframeProperty, EasingType, Keyframe, Track, Transform };
 
 import {
   PRESETS,
@@ -240,6 +241,9 @@ function snapshotKeyframe(e: CustomElement, t: Track | undefined, time: number):
   const lineHeight = e.lineHeight !== undefined || t?.keyframes.some((k) => k.lineHeight !== undefined)
     ? Number(propertyValue(t, time, "lineHeight", e.lineHeight ?? 1.2).toFixed(2))
     : undefined;
+  const textShadow = e.textShadow !== undefined || t?.keyframes.some((k) => k.textShadow !== undefined)
+    ? propertyStringValue(t, time, "textShadow", e.textShadow)
+    : undefined;
 
   const color = propertyColorValue(t, time, "color", e.color);
   const backgroundColor = propertyColorValue(t, time, "backgroundColor", e.backgroundColor);
@@ -270,6 +274,7 @@ function snapshotKeyframe(e: CustomElement, t: Track | undefined, time: number):
     fontSize,
     letterSpacing,
     lineHeight,
+    textShadow,
     color,
     backgroundColor,
     glowColor,
@@ -302,6 +307,7 @@ export function AnimationTimeline() {
   const [zoom, setZoom] = useState<number>(0.75);
   const [autoKeyframe, setAutoKeyframe] = useState<boolean>(true);
   const [copiedPayload, setCopiedPayload] = useState<boolean>(false);
+  const [copiedTransformKf, setCopiedTransformKf] = useState<boolean>(false);
 
   // Template variables state
   const [variables, setVariables] = useState<Record<string, string>>(DEFAULT_TEMPLATE_VARIABLES);
@@ -811,13 +817,70 @@ export function AnimationTimeline() {
     [selectedId, time, canvas.elements, tracks, pushCommand]
   );
 
+  const isTransformProp = (p: string) =>
+    p === "x" ||
+    p === "y" ||
+    p === "width" ||
+    p === "height" ||
+    p === "rotation" ||
+    p === "scaleX" ||
+    p === "scaleY" ||
+    p === "anchorX" ||
+    p === "anchorY";
+
   const updateKf = (p: KeyframeProperty | "easing", v: any) => {
     if (!selectedKeyframeId) return;
     updateTrack(selectedId, (t) => ({
       ...t,
-      keyframes: t.keyframes.map((k) =>
-        (k.id || `${selectedId}-${k.time}`) === selectedKeyframeId ? { ...k, [p]: v } : k
-      ),
+      keyframes: t.keyframes.map((k) => {
+        if ((k.id || `${selectedId}-${k.time}`) !== selectedKeyframeId) return k;
+        const next: Keyframe = { ...k, [p]: v };
+        if (isTransformProp(p)) {
+          const curTransform = k.transform || {
+            x: k.x ?? selectedElement?.x ?? 0,
+            y: k.y ?? selectedElement?.y ?? 0,
+            width: k.width ?? selectedElement?.width ?? 100,
+            height: k.height ?? selectedElement?.height ?? 100,
+            rotation: k.rotation ?? selectedElement?.rotation ?? 0,
+            scaleX: k.scaleX ?? selectedElement?.scaleX ?? 1,
+            scaleY: k.scaleY ?? selectedElement?.scaleY ?? 1,
+            anchorX: k.anchorX ?? selectedElement?.anchorX ?? 0.5,
+            anchorY: k.anchorY ?? selectedElement?.anchorY ?? 0.5,
+          };
+          next.transform = {
+            ...curTransform,
+            [p]: v,
+          };
+        }
+        return next;
+      }),
+    }));
+  };
+
+  const updateKfTransform = (patch: Partial<Transform>) => {
+    if (!selectedKeyframeId) return;
+    updateTrack(selectedId, (t) => ({
+      ...t,
+      keyframes: t.keyframes.map((k) => {
+        if ((k.id || `${selectedId}-${k.time}`) !== selectedKeyframeId) return k;
+        const curTransform = k.transform || {
+          x: k.x ?? selectedElement?.x ?? 0,
+          y: k.y ?? selectedElement?.y ?? 0,
+          width: k.width ?? selectedElement?.width ?? 100,
+          height: k.height ?? selectedElement?.height ?? 100,
+          rotation: k.rotation ?? selectedElement?.rotation ?? 0,
+          scaleX: k.scaleX ?? selectedElement?.scaleX ?? 1,
+          scaleY: k.scaleY ?? selectedElement?.scaleY ?? 1,
+          anchorX: k.anchorX ?? selectedElement?.anchorX ?? 0.5,
+          anchorY: k.anchorY ?? selectedElement?.anchorY ?? 0.5,
+        };
+        const nextTransform = { ...curTransform, ...patch };
+        return {
+          ...k,
+          ...patch,
+          transform: nextTransform,
+        };
+      }),
     }));
   };
 
@@ -903,10 +966,33 @@ export function AnimationTimeline() {
                     ...(typeof patch.fontSize === "number" ? { fontSize: patch.fontSize } : {}),
                     ...(typeof patch.letterSpacing === "number" ? { letterSpacing: patch.letterSpacing } : {}),
                     ...(typeof patch.lineHeight === "number" ? { lineHeight: patch.lineHeight } : {}),
+                    ...(typeof patch.textShadow === "string" ? { textShadow: patch.textShadow } : {}),
                     ...(typeof patch.color === "string" ? { color: patch.color } : {}),
                     ...(typeof patch.backgroundColor === "string" ? { backgroundColor: patch.backgroundColor } : {}),
                     ...(typeof patch.glowColor === "string" ? { glowColor: patch.glowColor } : {}),
                     ...(typeof patch.glowBlur === "number" ? { glowBlur: patch.glowBlur } : {}),
+                    transform: {
+                      ...(k.transform || {
+                        x: k.x ?? e.x,
+                        y: k.y ?? e.y,
+                        width: k.width ?? e.width,
+                        height: k.height ?? e.height,
+                        rotation: k.rotation ?? e.rotation ?? 0,
+                        scaleX: k.scaleX ?? e.scaleX ?? 1,
+                        scaleY: k.scaleY ?? e.scaleY ?? 1,
+                        anchorX: k.anchorX ?? e.anchorX ?? 0.5,
+                        anchorY: k.anchorY ?? e.anchorY ?? 0.5,
+                      }),
+                      ...(typeof patch.x === "number" ? { x: patch.x } : {}),
+                      ...(typeof patch.y === "number" ? { y: patch.y } : {}),
+                      ...(typeof patch.width === "number" ? { width: patch.width } : {}),
+                      ...(typeof patch.height === "number" ? { height: patch.height } : {}),
+                      ...(typeof patch.rotation === "number" ? { rotation: patch.rotation } : {}),
+                      ...(typeof patch.scaleX === "number" ? { scaleX: patch.scaleX } : {}),
+                      ...(typeof patch.scaleY === "number" ? { scaleY: patch.scaleY } : {}),
+                      ...(typeof patch.anchorX === "number" ? { anchorX: patch.anchorX } : {}),
+                      ...(typeof patch.anchorY === "number" ? { anchorY: patch.anchorY } : {}),
+                    },
                   }
                 : k
             ),
@@ -1297,7 +1383,26 @@ export function AnimationTimeline() {
         if (k.backgroundColor !== undefined) kf.backgroundColor = k.backgroundColor;
         if (k.glowColor !== undefined) kf.glowColor = k.glowColor;
         if (k.glowBlur !== undefined) kf.glowBlur = Math.round(k.glowBlur);
-        if (k.transform !== undefined) kf.transform = k.transform;
+        if (k.textShadow !== undefined) kf.textShadow = k.textShadow;
+        if (k.transform !== undefined) {
+          kf.transform = k.transform;
+        } else if (
+          k.x !== undefined || k.y !== undefined || k.width !== undefined ||
+          k.height !== undefined || k.rotation !== undefined || k.scaleX !== undefined ||
+          k.scaleY !== undefined || k.anchorX !== undefined || k.anchorY !== undefined
+        ) {
+          kf.transform = {
+            ...(k.x !== undefined ? { x: Math.round(k.x) } : {}),
+            ...(k.y !== undefined ? { y: Math.round(k.y) } : {}),
+            ...(k.width !== undefined ? { width: Math.round(k.width) } : {}),
+            ...(k.height !== undefined ? { height: Math.round(k.height) } : {}),
+            ...(k.rotation !== undefined ? { rotation: Number(k.rotation.toFixed(2)) } : {}),
+            ...(k.scaleX !== undefined ? { scaleX: Number(k.scaleX.toFixed(3)) } : {}),
+            ...(k.scaleY !== undefined ? { scaleY: Number(k.scaleY.toFixed(3)) } : {}),
+            ...(k.anchorX !== undefined ? { anchorX: Number(k.anchorX.toFixed(3)) } : {}),
+            ...(k.anchorY !== undefined ? { anchorY: Number(k.anchorY.toFixed(3)) } : {}),
+          };
+        }
         return kf;
       }),
     }));
@@ -2589,7 +2694,32 @@ export function AnimationTimeline() {
               <div className="rounded-xl border border-white/5 bg-black/25 p-2.5 space-y-2.5">
                 <div className="text-[10px] font-semibold uppercase tracking-wider text-purple-300 flex items-center justify-between">
                   <span>🔄 Transform</span>
-                  <div className="flex items-center gap-1.5">
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const tr = {
+                          transform: {
+                            x: Math.round(selectedKeyframe.x ?? selectedElement?.x ?? 0),
+                            y: Math.round(selectedKeyframe.y ?? selectedElement?.y ?? 0),
+                            width: Math.round(selectedKeyframe.width ?? selectedElement?.width ?? 100),
+                            height: Math.round(selectedKeyframe.height ?? selectedElement?.height ?? 100),
+                            rotation: Number((selectedKeyframe.rotation ?? selectedElement?.rotation ?? 0).toFixed(2)),
+                            scaleX: Number((selectedKeyframe.scaleX ?? selectedElement?.scaleX ?? 1).toFixed(3)),
+                            scaleY: Number((selectedKeyframe.scaleY ?? selectedElement?.scaleY ?? 1).toFixed(3)),
+                            anchorX: Number((selectedKeyframe.anchorX ?? selectedElement?.anchorX ?? 0.5).toFixed(3)),
+                            anchorY: Number((selectedKeyframe.anchorY ?? selectedElement?.anchorY ?? 0.5).toFixed(3)),
+                          },
+                        };
+                        navigator.clipboard.writeText(JSON.stringify(tr, null, 2));
+                        setCopiedTransformKf(true);
+                        setTimeout(() => setCopiedTransformKf(false), 2000);
+                      }}
+                      className="text-[9px] text-purple-400 hover:text-purple-300 underline font-medium"
+                      title="Sao chép đối tượng transform thống nhất theo chuẩn interface Transform"
+                    >
+                      {copiedTransformKf ? "✓ Đã chép JSON" : "Copy Transform JSON"}
+                    </button>
                     <button
                       type="button"
                       onClick={() => {
@@ -2928,7 +3058,7 @@ export function AnimationTimeline() {
 
               {/* 5. TYPOGRAPHY (For text/badge) */}
               {(selectedElement?.type === "text" || selectedElement?.type === "badge") && (
-                <div className="rounded-xl border border-white/5 bg-black/25 p-2.5 space-y-2">
+                <div className="rounded-xl border border-white/5 bg-black/25 p-2.5 space-y-2.5">
                   <div className="text-[10px] font-semibold uppercase tracking-wider text-purple-300">
                     ✍️ Typography
                   </div>
@@ -2962,6 +3092,56 @@ export function AnimationTimeline() {
                         className="mt-0.5 w-full rounded border border-white/10 bg-black/40 px-1.5 py-1 text-xs text-white outline-none focus:border-purple-500 font-mono"
                       />
                     </label>
+                  </div>
+
+                  {/* Text Shadow */}
+                  <div className="space-y-1.5 pt-1.5 border-t border-white/5">
+                    <div className="flex items-center justify-between text-[11px] text-slate-400">
+                      <span>Text Shadow & Glow</span>
+                      {selectedKeyframe.textShadow && (
+                        <button
+                          type="button"
+                          onClick={() => updateKf("textShadow", "")}
+                          className="text-[9px] text-red-400 hover:text-red-300 underline"
+                        >
+                          Tắt hiệu ứng
+                        </button>
+                      )}
+                    </div>
+
+                    <select
+                      value={
+                        TEXT_SHADOW_PRESETS.find((p) => p.value === (selectedKeyframe.textShadow ?? selectedElement?.textShadow))?.id ||
+                        (selectedKeyframe.textShadow ? "custom" : "none")
+                      }
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        if (val === "none") {
+                          updateKf("textShadow", "");
+                        } else if (val === "custom") {
+                          // keep current custom value
+                        } else {
+                          const p = TEXT_SHADOW_PRESETS.find((x) => x.id === val);
+                          if (p) updateKf("textShadow", p.value);
+                        }
+                      }}
+                      className="w-full rounded-lg border border-white/10 bg-black/40 px-2 py-1.5 text-xs text-white outline-none focus:border-purple-500"
+                    >
+                      {TEXT_SHADOW_PRESETS.map((preset) => (
+                        <option key={preset.id} value={preset.id}>
+                          {preset.name} {preset.value ? `(${preset.value.slice(0, 24)}...)` : "(Tắt)"}
+                        </option>
+                      ))}
+                      <option value="custom">Tự tùy chỉnh (Custom CSS)</option>
+                    </select>
+
+                    <input
+                      type="text"
+                      placeholder="e.g. 0 0 16px #c084fc, 2px 3px 6px rgba(0,0,0,0.85)"
+                      value={selectedKeyframe.textShadow ?? selectedElement?.textShadow ?? ""}
+                      onChange={(e) => updateKf("textShadow", e.target.value)}
+                      className="w-full rounded border border-white/10 bg-black/40 px-2 py-1 text-xs text-white outline-none focus:border-purple-500 font-mono text-[11px]"
+                    />
                   </div>
                 </div>
               )}

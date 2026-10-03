@@ -42,7 +42,11 @@ export interface QuoteGenerateRequest { type: "quote"; data: QuoteData; }
 
 export type CustomElementType = "text" | "image" | "avatar" | "badge" | "progress" | "box";
 
-export interface ElementTransform {
+/**
+ * Unified Transform system for canvas elements and animation keyframes.
+ * Consolidates position, dimension, rotation, 2D scale, and origin anchor into a single model.
+ */
+export interface Transform {
   x: number;
   y: number;
   width: number;
@@ -53,6 +57,8 @@ export interface ElementTransform {
   anchorX: number;
   anchorY: number;
 }
+
+export type ElementTransform = Transform;
 
 export interface CustomElement {
   id: string; type: CustomElementType; x: number; y: number; width: number; height: number;
@@ -76,7 +82,7 @@ export interface CustomElement {
   scaleY?: number;
   anchorX?: number;
   anchorY?: number;
-  transform?: ElementTransform;
+  transform?: Transform;
 
   // Appearance Filters
   blur?: number;
@@ -114,7 +120,7 @@ export interface KeyframeData {
   scaleY?: number;
   anchorX?: number;
   anchorY?: number;
-  transform?: Partial<ElementTransform>;
+  transform?: Partial<Transform>;
 
   // Appearance
   opacity?: number;
