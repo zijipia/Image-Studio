@@ -3,6 +3,7 @@ import path from "path";
 import satori from "satori";
 import sharp from "sharp";
 import { loadSatoriAdditionalAsset } from "./unicode-fonts.js";
+import { computeElementTextShadow } from "./text-effects.js";
 import type {
   SongResult,
   ProfileData,
@@ -1656,6 +1657,7 @@ export async function generateCustomCanvasImage(data: CustomCanvasData): Promise
   );
 
   const renderedChildren = processedElements.map((el) => {
+    const textShadow = computeElementTextShadow(el);
     const baseStyle: any = {
       position: "absolute",
       left: `${el.x}px`,
@@ -1663,43 +1665,52 @@ export async function generateCustomCanvasImage(data: CustomCanvasData): Promise
       width: `${el.width}px`,
       height: `${el.height}px`,
       zIndex: el.zIndex || 1,
+      overflow: el.type === "text" ? "visible" : "hidden",
     };
 
     if (el.type === "text") {
+      const style: Record<string, unknown> = {
+        ...baseStyle,
+        color: el.color || "#ffffff",
+        fontSize: `${el.fontSize || 18}px`,
+        fontWeight: el.fontWeight || 400,
+        display: "flex",
+        alignItems: "center",
+        justifyContent:
+          el.textAlign === "center" ? "center" : el.textAlign === "right" ? "flex-end" : "flex-start",
+      };
+      if (textShadow) {
+        style.textShadow = textShadow;
+      }
       return {
         type: "div",
         props: {
-          style: {
-            ...baseStyle,
-            color: el.color || "#ffffff",
-            fontSize: `${el.fontSize || 18}px`,
-            fontWeight: el.fontWeight || 400,
-            display: "flex",
-            alignItems: "center",
-            justifyContent:
-              el.textAlign === "center" ? "center" : el.textAlign === "right" ? "flex-end" : "flex-start",
-          },
+          style,
           children: el.content || "",
         },
       };
     }
 
     if (el.type === "badge") {
+      const style: Record<string, unknown> = {
+        ...baseStyle,
+        background: el.backgroundColor || "rgba(255,255,255,0.15)",
+        borderRadius: `${el.borderRadius ?? 999}px`,
+        border: el.border || "none",
+        color: el.color || "#ffffff",
+        fontSize: `${el.fontSize || 12}px`,
+        fontWeight: el.fontWeight || 600,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+      };
+      if (textShadow) {
+        style.textShadow = textShadow;
+      }
       return {
         type: "div",
         props: {
-          style: {
-            ...baseStyle,
-            background: el.backgroundColor || "rgba(255,255,255,0.15)",
-            borderRadius: `${el.borderRadius ?? 999}px`,
-            border: el.border || "none",
-            color: el.color || "#ffffff",
-            fontSize: `${el.fontSize || 12}px`,
-            fontWeight: el.fontWeight || 600,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-          },
+          style,
           children: el.content || "",
         },
       };

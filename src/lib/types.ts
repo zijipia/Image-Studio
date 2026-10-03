@@ -16,6 +16,16 @@ export interface CustomElement {
   content?: string; color?: string; backgroundColor?: string; fontSize?: number; fontWeight?: number;
   borderRadius?: number; border?: string; opacity?: number; zIndex?: number; progressPercent?: number;
   progressColor?: string; imageUrl?: string; textAlign?: "left" | "center" | "right";
+  textShadow?: string;
+  shadowEnabled?: boolean;
+  shadowColor?: string;
+  shadowBlur?: number;
+  shadowOffsetX?: number;
+  shadowOffsetY?: number;
+  glowEnabled?: boolean;
+  glowColor?: string;
+  glowBlur?: number;
+  glowIntensity?: "soft" | "medium" | "neon";
 }
 export interface CustomCanvasData {
   title: string; width: number; height: number; background: string; elements: CustomElement[];

@@ -1,6 +1,8 @@
 import React, { useState, useRef, useEffect, useCallback } from "react";
 import type { CustomCanvasData, CustomElement, CustomElementType } from "../lib/types";
 import { DEFAULT_CUSTOM_CANVAS, CANVAS_PRESET_BACKGROUNDS } from "../lib/constants";
+import { TextShadowControlPanel } from "./TextShadowControlPanel";
+import { computeElementTextShadow } from "../lib/text-effects";
 import {
   Type,
   Image as ImageIcon,
@@ -269,6 +271,16 @@ export function CustomBuilder({
           color: "#ffffff",
           fontSize: 24,
           fontWeight: 600,
+          textShadow: "0 0 10px rgba(192, 132, 252, 0.7), 2px 3px 6px rgba(0, 0, 0, 0.85)",
+          shadowEnabled: true,
+          shadowOffsetX: 2,
+          shadowOffsetY: 3,
+          shadowBlur: 6,
+          shadowColor: "rgba(0, 0, 0, 0.85)",
+          glowEnabled: true,
+          glowBlur: 10,
+          glowColor: "#c084fc",
+          glowIntensity: "medium",
         };
         break;
       case "avatar":
@@ -693,8 +705,10 @@ if response.status_code == 200:
                           className="flex h-full w-full items-center pointer-events-none"
                           style={{
                             color: el.color || "#ffffff",
+                            textShadow: computeElementTextShadow(el),
                             fontSize: `${el.fontSize || 18}px`,
                             fontWeight: el.fontWeight || 400,
+                            overflow: "visible",
                             justifyContent:
                               el.textAlign === "center"
                                 ? "center"
@@ -715,6 +729,7 @@ if response.status_code == 200:
                             borderRadius: `${el.borderRadius ?? 999}px`,
                             border: el.border || "none",
                             color: el.color || "#ffffff",
+                            textShadow: computeElementTextShadow(el),
                             fontSize: `${el.fontSize || 12}px`,
                           }}
                         >
@@ -1104,6 +1119,14 @@ if response.status_code == 200:
                       />
                     </div>
                   </div>
+
+                  {/* Text Shadow & Glow Controls */}
+                  {(selectedElement.type === "text" || selectedElement.type === "badge") && (
+                    <TextShadowControlPanel
+                      element={selectedElement}
+                      onChange={(patch) => updateSelectedElement(patch)}
+                    />
+                  )}
                 </div>
               ) : (
                 <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-white/10 p-8 text-center text-slate-500">

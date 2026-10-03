@@ -5,6 +5,7 @@ import sharp, { type Metadata } from "sharp";
 import type { CustomCanvasData, CustomElement } from "./types.js";
 import { imageToDataUri } from "./image-generator.js";
 import { loadSatoriAdditionalAsset } from "./unicode-fonts.js";
+import { computeElementTextShadow } from "./text-effects.js";
 
 let fonts: Array<{ name: string; data: Buffer; weight: 400 | 500; style: "normal" }> | null = null;
 const animatedSourceCache = new Map<string, Promise<Buffer>>();
@@ -71,6 +72,8 @@ async function animatedImageToDataUri(url: string, timeMs: number, targetWidth: 
 }
 
 async function renderElement(element: CustomElement): Promise<any> {
+  const textShadow = computeElementTextShadow(element);
+
   const base: any = {
     position: "absolute",
     left: px(element.x),
@@ -80,7 +83,7 @@ async function renderElement(element: CustomElement): Promise<any> {
     opacity: element.opacity ?? 1,
     zIndex: element.zIndex ?? 0,
     boxSizing: "border-box",
-    overflow: "hidden",
+    overflow: element.type === "text" ? "visible" : "hidden",
   };
 
   if (element.type === "text" || element.type === "badge") {
@@ -96,6 +99,9 @@ async function renderElement(element: CustomElement): Promise<any> {
       lineHeight: 1.2,
       whiteSpace: "pre-wrap",
     };
+    if (textShadow) {
+      style.textShadow = textShadow;
+    }
     if (element.type === "badge") {
       if (element.backgroundColor) style.background = element.backgroundColor;
       if (element.border) style.border = element.border;

@@ -1,6 +1,8 @@
 import React, { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import type { CustomCanvasData, CustomElement, CustomElementType } from "../lib/types";
 import { recordGeneratedImage } from "../lib/use-stats";
+import { TextShadowControlPanel } from "./TextShadowControlPanel";
+import { computeElementTextShadow } from "../lib/text-effects";
 import {
   Film,
   Play,
@@ -255,6 +257,16 @@ const PRESETS: AnimationPreset[] = [
           color: "#ffffff",
           fontSize: 44,
           fontWeight: 700,
+          textShadow: "0 0 16px rgba(192, 132, 252, 0.75), 2px 3px 6px rgba(0, 0, 0, 0.9)",
+          shadowEnabled: true,
+          shadowOffsetX: 2,
+          shadowOffsetY: 3,
+          shadowBlur: 6,
+          shadowColor: "rgba(0, 0, 0, 0.9)",
+          glowEnabled: true,
+          glowBlur: 16,
+          glowColor: "#c084fc",
+          glowIntensity: "medium",
         },
         {
           id: "subtitle",
@@ -267,6 +279,12 @@ const PRESETS: AnimationPreset[] = [
           color: "#c084fc",
           fontSize: 24,
           fontWeight: 500,
+          textShadow: "1px 2px 4px rgba(0, 0, 0, 0.8)",
+          shadowEnabled: true,
+          shadowOffsetX: 1,
+          shadowOffsetY: 2,
+          shadowBlur: 4,
+          shadowColor: "rgba(0, 0, 0, 0.8)",
         },
         {
           id: "badge",
@@ -280,6 +298,7 @@ const PRESETS: AnimationPreset[] = [
           backgroundColor: "#7e22ce",
           borderRadius: 8,
           fontSize: 13,
+          textShadow: "0 0 8px rgba(255, 255, 255, 0.5)",
         },
       ],
     },
@@ -348,6 +367,16 @@ const PRESETS: AnimationPreset[] = [
           color: "#ffffff",
           fontSize: 40,
           fontWeight: 700,
+          textShadow: "0 0 16px rgba(52, 211, 153, 0.7), 2px 3px 6px rgba(0, 0, 0, 0.85)",
+          shadowEnabled: true,
+          shadowOffsetX: 2,
+          shadowOffsetY: 3,
+          shadowBlur: 6,
+          shadowColor: "rgba(0, 0, 0, 0.85)",
+          glowEnabled: true,
+          glowBlur: 16,
+          glowColor: "#34d399",
+          glowIntensity: "medium",
         },
         {
           id: "artist",
@@ -360,6 +389,12 @@ const PRESETS: AnimationPreset[] = [
           color: "#6ee7b7",
           fontSize: 22,
           fontWeight: 500,
+          textShadow: "1px 2px 4px rgba(0, 0, 0, 0.7)",
+          shadowEnabled: true,
+          shadowOffsetX: 1,
+          shadowOffsetY: 2,
+          shadowBlur: 4,
+          shadowColor: "rgba(0, 0, 0, 0.7)",
         },
         {
           id: "progress",
@@ -418,6 +453,7 @@ const PRESETS: AnimationPreset[] = [
           borderRadius: 30,
           fontSize: 32,
           border: "3px solid #f59e0b",
+          textShadow: "0 0 10px rgba(254, 240, 138, 0.7)",
         },
         {
           id: "rank-title",
@@ -430,6 +466,16 @@ const PRESETS: AnimationPreset[] = [
           color: "#fbbf24",
           fontSize: 38,
           fontWeight: 800,
+          textShadow: "0 0 18px rgba(251, 191, 36, 0.8), 2px 3px 6px rgba(0, 0, 0, 0.95)",
+          shadowEnabled: true,
+          shadowOffsetX: 2,
+          shadowOffsetY: 3,
+          shadowBlur: 6,
+          shadowColor: "rgba(0, 0, 0, 0.95)",
+          glowEnabled: true,
+          glowBlur: 18,
+          glowColor: "#facc15",
+          glowIntensity: "medium",
         },
         {
           id: "rank-sub",
@@ -442,6 +488,12 @@ const PRESETS: AnimationPreset[] = [
           color: "#fed7aa",
           fontSize: 22,
           fontWeight: 500,
+          textShadow: "1px 2px 4px rgba(0, 0, 0, 0.8)",
+          shadowEnabled: true,
+          shadowOffsetX: 1,
+          shadowOffsetY: 2,
+          shadowBlur: 4,
+          shadowColor: "rgba(0, 0, 0, 0.8)",
         },
         {
           id: "xp-bar",
@@ -954,6 +1006,16 @@ export function AnimationTimeline() {
         color: "#ffffff",
         fontSize: 32,
         fontWeight: 600,
+        textShadow: "0 0 12px rgba(192, 132, 252, 0.7), 2px 3px 6px rgba(0, 0, 0, 0.85)",
+        shadowEnabled: true,
+        shadowOffsetX: 2,
+        shadowOffsetY: 3,
+        shadowBlur: 6,
+        shadowColor: "rgba(0, 0, 0, 0.85)",
+        glowEnabled: true,
+        glowBlur: 12,
+        glowColor: "#c084fc",
+        glowIntensity: "medium",
       });
     } else if (type === "avatar" || type === "image") {
       Object.assign(base, {
@@ -1708,9 +1770,10 @@ export function AnimationTimeline() {
                         {/* Visual content */}
                         {e.type === "text" || e.type === "badge" ? (
                           <div
-                            className="h-full w-full overflow-hidden"
+                            className="h-full w-full"
                             style={{
                               color: e.color,
+                              textShadow: computeElementTextShadow(e),
                               background: e.type === "badge" ? e.backgroundColor : undefined,
                               borderRadius: (e.borderRadius ?? 0) * zoom,
                               border: e.border,
@@ -1726,6 +1789,7 @@ export function AnimationTimeline() {
                                   : "flex-start",
                               whiteSpace: "pre-wrap",
                               padding: e.type === "badge" ? `${4 * zoom}px ${10 * zoom}px` : undefined,
+                              overflow: e.type === "text" ? "visible" : "hidden",
                             }}
                           >
                             {e.content}
@@ -2279,6 +2343,12 @@ export function AnimationTimeline() {
                       <option value="right">Phải (Right)</option>
                     </select>
                   </label>
+
+                  {/* Text Drop Shadow & Outer Glow Controls */}
+                  <TextShadowControlPanel
+                    element={selectedElement}
+                    onChange={(patch) => updateCurrentElement(selectedElement.id, patch)}
+                  />
                 </div>
               )}
 
@@ -2415,6 +2485,13 @@ export function AnimationTimeline() {
                       placeholder="1px solid #fff"
                     />
                   </label>
+
+                  {selectedElement.type === "badge" && (
+                    <TextShadowControlPanel
+                      element={selectedElement}
+                      onChange={(patch) => updateCurrentElement(selectedElement.id, patch)}
+                    />
+                  )}
                 </div>
               )}
             </div>
