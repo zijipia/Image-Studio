@@ -391,29 +391,42 @@ export function renderParticlesToSatoriVNodes(
       width: `${s}px`,
       height: `${s}px`,
       opacity: p.opacity,
-      transform: p.rotation !== 0 ? `rotate(${p.rotation}deg)` : undefined,
       display: "flex",
       alignItems: "center",
       justifyContent: "center",
       pointerEvents: "none",
     };
+    if (p.rotation !== 0) {
+      baseStyle.transform = `rotate(${p.rotation}deg)`;
+    }
 
     if (p.shape === "circle") {
+      const circleStyle: Record<string, any> = {
+        ...baseStyle,
+        backgroundColor: p.color,
+        borderRadius: "50%",
+      };
+      if (glowShadow) {
+        circleStyle.boxShadow = glowShadow;
+      }
       return {
         type: "div",
         props: {
-          style: {
-            ...baseStyle,
-            backgroundColor: p.color,
-            borderRadius: "50%",
-            boxShadow: glowShadow,
-          },
+          style: circleStyle,
         },
       };
     }
 
     // Vector shapes
     const svgPath = PARTICLE_SVG_PATHS[p.shape] || PARTICLE_SVG_PATHS.spark;
+
+    const svgStyle: Record<string, any> = {
+      width: "100%",
+      height: "100%",
+    };
+    if (glowShadow) {
+      svgStyle.filter = `drop-shadow(0 0 ${Math.max(2, Math.round(s * 0.4))}px ${p.color})`;
+    }
 
     return {
       type: "div",
@@ -426,11 +439,7 @@ export function renderParticlesToSatoriVNodes(
               viewBox: "0 0 24 24",
               width: `${s}px`,
               height: `${s}px`,
-              style: {
-                width: "100%",
-                height: "100%",
-                filter: glowShadow ? `drop-shadow(0 0 ${Math.max(2, Math.round(s * 0.4))}px ${p.color})` : undefined,
-              },
+              style: svgStyle,
               children: [
                 {
                   type: "path",

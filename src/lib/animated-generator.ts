@@ -3,6 +3,7 @@ import type { AnimatedGenerateData, AnimatedGenerateRequest, AnyGenerateRequest,
 import { dispatchGenerateImage } from "./image-generator.js";
 import { renderCustomCanvasSvg } from "./animated-canvas-renderer.js";
 import { buildFrame, compileTimelineToFrames, parseTemplateString } from "./timeline-interpolator.js";
+import { DEFAULT_TEMPLATE_VARIABLES } from "./animation-presets.js";
 
 export interface GenerateResult { buffer: Buffer; width: number; height: number; mime: "image/png" | "image/gif" | "image/webp"; filename: string; }
 const MAX_FRAMES = 60;
@@ -11,7 +12,10 @@ const MAX_TOTAL_DURATION = 10_000;
 const DEFAULT_DELAY = 120;
 const FRAME_RENDER_CONCURRENCY = 3;
 
-function safeFilename(value: string, fallback: string) { const normalized = value.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, ""); return normalized || fallback; }
+function safeFilename(value: string | undefined, fallback: string) {
+  const normalized = (value || "").trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+  return normalized || fallback;
+}
 function normalizeDelays(delay: AnimatedGenerateData["delay"], frameCount: number) {
   const delays = Array.isArray(delay) ? [...delay] : Array.from({ length: frameCount }, () => delay ?? DEFAULT_DELAY);
   if (delays.length !== frameCount) throw new Error(`Animated delay array must contain exactly ${frameCount} values; received ${delays.length}.`);
@@ -36,6 +40,11 @@ export async function generateAnimatedImage(data: AnimatedGenerateData): Promise
     data.frameIndex !== undefined ||
     data.frameTime !== undefined;
 
+  const templateVariables = {
+    ...DEFAULT_TEMPLATE_VARIABLES,
+    ...(data.templateVariables || {}),
+  };
+
   let frames = data.frames;
   let delay = data.delay;
 
@@ -57,12 +66,12 @@ export async function generateAnimatedImage(data: AnimatedGenerateData): Promise
       targetFrame = {
         ...raw,
         backgroundImageUrl: raw.backgroundImageUrl
-          ? parseTemplateString(raw.backgroundImageUrl, data.templateVariables)
+          ? parseTemplateString(raw.backgroundImageUrl, templateVariables)
           : undefined,
         elements: raw.elements.map((el) => ({
           ...el,
-          content: el.content ? parseTemplateString(el.content, data.templateVariables) : undefined,
-          imageUrl: el.imageUrl ? parseTemplateString(el.imageUrl, data.templateVariables) : undefined,
+          content: el.content ? parseTemplateString(el.content, templateVariables) : undefined,
+          imageUrl: el.imageUrl ? parseTemplateString(el.imageUrl, templateVariables) : undefined,
         })),
       };
     } else {
@@ -122,7 +131,7 @@ export async function generateAnimatedImage(data: AnimatedGenerateData): Promise
       tracks: data.tracks || [],
       duration: data.duration,
       fps: data.fps,
-      templateVariables: data.templateVariables,
+      templateVariables,
     });
     frames = compiled.frames;
     delay = data.delay ?? compiled.frameDelay;

@@ -86,6 +86,7 @@ async function renderElement(element: CustomElement, timeMs = 0): Promise<any> {
   const anchorY = element.transform?.anchorY ?? element.anchorY ?? 0.5;
 
   const base: any = {
+    display: "flex",
     position: "absolute",
     left: px(x),
     top: px(y),
@@ -140,9 +141,9 @@ async function renderElement(element: CustomElement, timeMs = 0): Promise<any> {
 
   if (element.type === "progress") {
     const percent = Math.max(0, Math.min(100, element.progressPercent ?? 0));
-    const style: Record<string, unknown> = { ...base, background: element.backgroundColor ?? "#27272a", borderRadius: px(element.borderRadius) };
+    const style: Record<string, unknown> = { ...base, display: "flex", background: element.backgroundColor ?? "#27272a", borderRadius: px(element.borderRadius) };
     if (element.border) style.border = element.border;
-    return { type: "div", props: { style, children: [{ type: "div", props: { style: { width: `${percent}%`, height: "100%", background: element.progressColor ?? "#a855f7", borderRadius: px(element.borderRadius) } } }] } };
+    return { type: "div", props: { style, children: [{ type: "div", props: { style: { display: "flex", width: `${percent}%`, height: "100%", background: element.progressColor ?? "#a855f7", borderRadius: px(element.borderRadius) } } }] } };
   }
 
   if (element.type === "particle") {
@@ -154,6 +155,7 @@ async function renderElement(element: CustomElement, timeMs = 0): Promise<any> {
       props: {
         style: {
           ...base,
+          display: "flex",
           overflow: "hidden",
           pointerEvents: "none",
         },
@@ -162,7 +164,7 @@ async function renderElement(element: CustomElement, timeMs = 0): Promise<any> {
     };
   }
 
-  const style: Record<string, unknown> = { ...base, borderRadius: px(element.borderRadius) };
+  const style: Record<string, unknown> = { ...base, display: "flex", borderRadius: px(element.borderRadius) };
   if (element.backgroundColor) style.background = element.backgroundColor;
   if (element.border) style.border = element.border;
   return { type: "div", props: { style } };
@@ -194,6 +196,7 @@ export async function renderCustomCanvasSvg(canvas: CustomCanvasData, timeMs = 0
       type: "div",
       props: {
         style: {
+          display: "flex",
           position: "absolute",
           inset: 0,
           width: px(canvas.width),

@@ -54,7 +54,7 @@ const FALLBACK_AVATAR =
   'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="96" height="96" viewBox="0 0 24 24" fill="none" stroke="%23c084fc" stroke-width="2"><circle cx="12" cy="12" r="10" fill="%232e1065"/><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3" fill="%23c084fc"/><circle cx="18" cy="16" r="3" fill="%23c084fc"/></svg>';
 
 export async function imageToDataUri(url: string, targetSize = 96): Promise<string> {
-  if (!url || typeof url !== "string") {
+  if (!url || typeof url !== "string" || (!url.startsWith("http://") && !url.startsWith("https://") && !url.startsWith("data:"))) {
     return FALLBACK_AVATAR;
   }
 
@@ -685,6 +685,7 @@ export async function generateSongImage(request: {
       type: "div",
       props: {
         style: {
+          display: "flex",
           position: "absolute",
           inset: 0,
           width: `${CANVAS_WIDTH}px`,
@@ -1962,6 +1963,7 @@ export async function generateProfileImage(data: ProfileData): Promise<{ png: Bu
       type: "div",
       props: {
         style: {
+          display: "flex",
           position: "absolute",
           inset: 0,
           width: `${PROFILE_WIDTH}px`,
@@ -3215,6 +3217,7 @@ export async function generateLeaderboardImage(data: LeaderboardData): Promise<{
       type: "div",
       props: {
         style: {
+          display: "flex",
           position: "absolute",
           inset: 0,
           width: `${LEADERBOARD_WIDTH}px`,
@@ -3930,6 +3933,7 @@ export async function generateQuoteImage(data: QuoteData): Promise<{ png: Buffer
       type: "div",
       props: {
         style: {
+          display: "flex",
           position: "absolute",
           inset: 0,
           width: `${QUOTE_WIDTH}px`,
@@ -3978,6 +3982,7 @@ export async function generateCustomCanvasImage(data: CustomCanvasData): Promise
   const renderedChildren = processedElements.map((el) => {
     const textShadow = computeElementTextShadow(el);
     const baseStyle: any = {
+      display: "flex",
       position: "absolute",
       left: `${el.x}px`,
       top: `${el.y}px`,
@@ -4090,6 +4095,7 @@ export async function generateCustomCanvasImage(data: CustomCanvasData): Promise
         props: {
           style: {
             ...baseStyle,
+            display: "flex",
             overflow: "hidden",
             pointerEvents: "none",
           },
@@ -4125,6 +4131,7 @@ export async function generateCustomCanvasImage(data: CustomCanvasData): Promise
       type: "div",
       props: {
         style: {
+          display: "flex",
           position: "absolute",
           inset: 0,
           width: `${width}px`,
