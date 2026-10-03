@@ -14,9 +14,54 @@ The Timeline provides:
 - duration and FPS controls;
 - GIF or animated WebP output;
 - per-element tracks and keyframes;
-- smooth interpolation with easing for position, size and opacity;
+- smooth interpolation with easing across:
+  - **Position**: `x`, `y`
+  - **Transform**: `width`, `height`, `rotation` (degrees), `scaleX`, `scaleY`, `anchorX`, `anchorY`, and unified `transform` object
+  - **Appearance**: `opacity`, `blur`, `brightness`, `saturation`, `contrast`
+  - **Color**: `color` (text), `backgroundColor`, `glowColor`, `glowBlur`
+  - **Typography**: `fontSize`, `letterSpacing`, `lineHeight`, `textShadow`
+- easing support: `ease-in-out`, `linear`, `ease-in`, `ease-out`, `bounce`, `elastic`, `spring`;
 - generated frame count and frame delay preview;
 - copyable `/api/generate` JSON payload.
+
+## Unified Transform & Keyframe Model
+
+Keyframes and Elements support a unified transform schema:
+
+```json
+{
+  "time": 500,
+  "easing": "ease-out",
+  "transform": {
+    "x": 300,
+    "y": 120,
+    "width": 400,
+    "height": 200,
+    "rotation": 15,
+    "scaleX": 1.1,
+    "scaleY": 1.1,
+    "anchorX": 0.5,
+    "anchorY": 0.5
+  },
+  "opacity": 1,
+  "blur": 0,
+  "brightness": 100,
+  "saturation": 100,
+  "contrast": 100
+}
+```
+
+Or flat keyframe properties:
+
+```json
+{
+  "time": 500,
+  "rotation": 10,
+  "scaleX": 1.05,
+  "scaleY": 1.05,
+  "opacity": 1
+}
+```
 
 The current sample is a 930×280 welcome card and demonstrates staggered title/subtitle/avatar motion.
 

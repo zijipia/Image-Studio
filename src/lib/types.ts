@@ -41,6 +41,19 @@ export interface QuoteData {
 export interface QuoteGenerateRequest { type: "quote"; data: QuoteData; }
 
 export type CustomElementType = "text" | "image" | "avatar" | "badge" | "progress" | "box";
+
+export interface ElementTransform {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  rotation: number;
+  scaleX: number;
+  scaleY: number;
+  anchorX: number;
+  anchorY: number;
+}
+
 export interface CustomElement {
   id: string; type: CustomElementType; x: number; y: number; width: number; height: number;
   content?: string; color?: string; backgroundColor?: string; fontSize?: number; fontWeight?: number;
@@ -56,6 +69,24 @@ export interface CustomElement {
   glowColor?: string;
   glowBlur?: number;
   glowIntensity?: "soft" | "medium" | "neon";
+
+  // Unified Transform System
+  rotation?: number;
+  scaleX?: number;
+  scaleY?: number;
+  anchorX?: number;
+  anchorY?: number;
+  transform?: ElementTransform;
+
+  // Appearance Filters
+  blur?: number;
+  brightness?: number;
+  saturation?: number;
+  contrast?: number;
+
+  // Extended Typography
+  letterSpacing?: number;
+  lineHeight?: number;
 }
 export interface CustomCanvasData {
   title: string; width: number; height: number; background: string; elements: CustomElement[];
@@ -69,12 +100,40 @@ export type AnimatedImageFormat = "gif" | "webp" | "png";
 export interface KeyframeData {
   id?: string;
   time: number;
-  easing?: "ease-in-out" | "linear" | "ease-in" | "ease-out" | "bounce";
+  easing?: "ease-in-out" | "linear" | "ease-in" | "ease-out" | "bounce" | "elastic" | "spring";
+
+  // Position
   x?: number;
   y?: number;
+
+  // Transform
   width?: number;
   height?: number;
+  rotation?: number;
+  scaleX?: number;
+  scaleY?: number;
+  anchorX?: number;
+  anchorY?: number;
+  transform?: Partial<ElementTransform>;
+
+  // Appearance
   opacity?: number;
+  blur?: number;
+  brightness?: number;
+  saturation?: number;
+  contrast?: number;
+
+  // Color & Glow
+  color?: string;
+  backgroundColor?: string;
+  glowColor?: string;
+  glowBlur?: number;
+
+  // Typography
+  fontSize?: number;
+  letterSpacing?: number;
+  lineHeight?: number;
+  textShadow?: string;
 }
 
 export interface TrackData {

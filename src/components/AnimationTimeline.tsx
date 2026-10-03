@@ -35,42 +35,44 @@ import {
   FileJson,
   Terminal,
   Camera,
+  Undo2,
+  Redo2,
+  Save,
+  FolderOpen,
+  FilePlus,
+  History as HistoryIcon,
+  FileDown,
+  FileCode,
+  Upload,
 } from "lucide-react";
 
-import type {
-  KeyframeProperty,
-  EasingType,
-  Keyframe,
-  Track,
+import {
+  executeCommand,
+  type AnimationCommand,
+  type EditorSnapshotState,
+} from "../lib/animation-history";
+import {
+  createIStudioProject,
+  downloadIStudioFile,
+  parseIStudioFile,
+  saveProjectToLocalStorage,
+  loadProjectFromLocalStorage,
+} from "../lib/project-file";
+
+import {
+  buildFrame,
+  propertyValue,
+  propertyColorValue,
+  applyEasing,
+  clamp,
+  lerp,
+  type KeyframeProperty,
+  type EasingType,
+  type Keyframe,
+  type Track,
 } from "../lib/timeline-interpolator";
 
 export type { KeyframeProperty, EasingType, Keyframe, Track };
-
-const clamp = (v: number, min: number, max: number) => Math.max(min, Math.min(max, v));
-const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
-
-function applyEasing(t: number, easing: EasingType = "ease-in-out"): number {
-  const clamped = clamp(t, 0, 1);
-  switch (easing) {
-    case "linear":
-      return clamped;
-    case "ease-in":
-      return clamped * clamped;
-    case "ease-out":
-      return clamped * (2 - clamped);
-    case "bounce": {
-      const c4 = (2 * Math.PI) / 3;
-      return clamped === 0
-        ? 0
-        : clamped === 1
-        ? 1
-        : Math.pow(2, -10 * clamped) * Math.sin((clamped * 10 - 0.75) * c4) + 1;
-    }
-    case "ease-in-out":
-    default:
-      return clamped * clamped * (3 - 2 * clamped);
-  }
-}
 
 import {
   PRESETS,
@@ -206,56 +208,72 @@ function ColorPalettePicker({
 
 
 
-function propertyValue(
-  track: Track | undefined,
-  time: number,
-  p: KeyframeProperty,
-  fallback: number
-): number {
-  if (!track || !track.keyframes.length) return fallback;
-  const f = [...track.keyframes].sort((a, b) => a.time - b.time);
-  if (time <= f[0].time) return f[0][p] ?? fallback;
-  if (time >= f[f.length - 1].time) return f[f.length - 1][p] ?? fallback;
-
-  const i = f.findIndex((x) => x.time >= time);
-  const a = f[i - 1];
-  const b = f[i];
-  const normalized = (time - a.time) / Math.max(1, b.time - a.time);
-  const eased = applyEasing(normalized, b.easing ?? "ease-in-out");
-  return lerp(a[p] ?? fallback, b[p] ?? fallback, eased);
-}
-
-function buildFrame(
-  canvas: CustomCanvasData,
-  tracks: Track[],
-  time: number
-): CustomCanvasData {
-  return {
-    ...canvas,
-    elements: canvas.elements.map((e) => {
-      const t = tracks.find((x) => x.elementId === e.id);
-      return {
-        ...e,
-        x: Math.round(propertyValue(t, time, "x", e.x)),
-        y: Math.round(propertyValue(t, time, "y", e.y)),
-        width: Math.round(propertyValue(t, time, "width", e.width)),
-        height: Math.round(propertyValue(t, time, "height", e.height)),
-        opacity: Number(propertyValue(t, time, "opacity", e.opacity ?? 1).toFixed(3)),
-      };
-    }),
-  };
-}
-
 function snapshotKeyframe(e: CustomElement, t: Track | undefined, time: number): Keyframe {
+  const x = Math.round(propertyValue(t, time, "x", e.transform?.x ?? e.x));
+  const y = Math.round(propertyValue(t, time, "y", e.transform?.y ?? e.y));
+  const width = Math.round(propertyValue(t, time, "width", e.transform?.width ?? e.width));
+  const height = Math.round(propertyValue(t, time, "height", e.transform?.height ?? e.height));
+  const rotation = Number(propertyValue(t, time, "rotation", e.transform?.rotation ?? e.rotation ?? 0).toFixed(2));
+  const scaleX = Number(propertyValue(t, time, "scaleX", e.transform?.scaleX ?? e.scaleX ?? 1).toFixed(3));
+  const scaleY = Number(propertyValue(t, time, "scaleY", e.transform?.scaleY ?? e.scaleY ?? 1).toFixed(3));
+  const anchorX = Number(propertyValue(t, time, "anchorX", e.transform?.anchorX ?? e.anchorX ?? 0.5).toFixed(3));
+  const anchorY = Number(propertyValue(t, time, "anchorY", e.transform?.anchorY ?? e.anchorY ?? 0.5).toFixed(3));
+
+  const opacity = Number(propertyValue(t, time, "opacity", e.opacity ?? 1).toFixed(3));
+  const blur = e.blur !== undefined || t?.keyframes.some((k) => k.blur !== undefined)
+    ? Number(propertyValue(t, time, "blur", e.blur ?? 0).toFixed(2))
+    : undefined;
+  const brightness = e.brightness !== undefined || t?.keyframes.some((k) => k.brightness !== undefined)
+    ? Math.round(propertyValue(t, time, "brightness", e.brightness ?? 100))
+    : undefined;
+  const saturation = e.saturation !== undefined || t?.keyframes.some((k) => k.saturation !== undefined)
+    ? Math.round(propertyValue(t, time, "saturation", e.saturation ?? 100))
+    : undefined;
+  const contrast = e.contrast !== undefined || t?.keyframes.some((k) => k.contrast !== undefined)
+    ? Math.round(propertyValue(t, time, "contrast", e.contrast ?? 100))
+    : undefined;
+
+  const fontSize = e.fontSize !== undefined ? Math.round(propertyValue(t, time, "fontSize", e.fontSize)) : undefined;
+  const letterSpacing = e.letterSpacing !== undefined || t?.keyframes.some((k) => k.letterSpacing !== undefined)
+    ? Number(propertyValue(t, time, "letterSpacing", e.letterSpacing ?? 0).toFixed(2))
+    : undefined;
+  const lineHeight = e.lineHeight !== undefined || t?.keyframes.some((k) => k.lineHeight !== undefined)
+    ? Number(propertyValue(t, time, "lineHeight", e.lineHeight ?? 1.2).toFixed(2))
+    : undefined;
+
+  const color = propertyColorValue(t, time, "color", e.color);
+  const backgroundColor = propertyColorValue(t, time, "backgroundColor", e.backgroundColor);
+  const glowColor = propertyColorValue(t, time, "glowColor", e.glowColor);
+  const glowBlur = e.glowBlur !== undefined || t?.keyframes.some((k) => k.glowBlur !== undefined)
+    ? Math.round(propertyValue(t, time, "glowBlur", e.glowBlur ?? 16))
+    : undefined;
+
   return {
     id: `${e.id}-${Math.round(time)}-${Date.now()}`,
     time: Math.round(time),
     easing: "ease-in-out",
-    x: Math.round(propertyValue(t, time, "x", e.x)),
-    y: Math.round(propertyValue(t, time, "y", e.y)),
-    width: Math.round(propertyValue(t, time, "width", e.width)),
-    height: Math.round(propertyValue(t, time, "height", e.height)),
-    opacity: Number(propertyValue(t, time, "opacity", e.opacity ?? 1).toFixed(3)),
+    x,
+    y,
+    width,
+    height,
+    rotation,
+    scaleX,
+    scaleY,
+    anchorX,
+    anchorY,
+    transform: { x, y, width, height, rotation, scaleX, scaleY, anchorX, anchorY },
+    opacity,
+    blur,
+    brightness,
+    saturation,
+    contrast,
+    fontSize,
+    letterSpacing,
+    lineHeight,
+    color,
+    backgroundColor,
+    glowColor,
+    glowBlur,
   };
 }
 
@@ -304,6 +322,21 @@ export function AnimationTimeline() {
   const [draggedElementIndex, setDraggedElementIndex] = useState<number | null>(null);
   const [dragOverElementIndex, setDragOverElementIndex] = useState<number | null>(null);
 
+  // Project (.istudio) & History State
+  const [projectName, setProjectName] = useState<string>("Welcome Card Animation");
+  const [lastSavedNotice, setLastSavedNotice] = useState<string | null>(null);
+  const [showHistoryDropdown, setShowHistoryDropdown] = useState<boolean>(false);
+  const [showNewConfirmModal, setShowNewConfirmModal] = useState<boolean>(false);
+  const [showSaveAsModal, setShowSaveAsModal] = useState<boolean>(false);
+  const [saveAsFilename, setSaveAsFilename] = useState<string>("Welcome Card Animation");
+  const [showImportModal, setShowImportModal] = useState<boolean>(false);
+  const [importJsonText, setImportJsonText] = useState<string>("");
+  const [importError, setImportError] = useState<string | null>(null);
+  const [importTab, setImportTab] = useState<"file" | "text">("file");
+  const [undoStack, setUndoStack] = useState<AnimationCommand[]>([]);
+  const [redoStack, setRedoStack] = useState<AnimationCommand[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   const previewContainerRef = useRef<HTMLDivElement>(null);
   const previewRef = useRef<HTMLDivElement>(null);
   const timelineRulerRef = useRef<HTMLDivElement>(null);
@@ -317,6 +350,215 @@ export function AnimationTimeline() {
     start: CustomElement;
     canvasRect: DOMRect;
   } | null>(null);
+
+  // Push command to history stack
+  const pushCommand = useCallback((cmd: AnimationCommand) => {
+    setUndoStack((prev) => {
+      const next = [...prev, cmd];
+      if (next.length > 50) return next.slice(next.length - 50);
+      return next;
+    });
+    setRedoStack([]); // New action clears redo
+  }, []);
+
+  // Undo last command
+  const undo = useCallback(() => {
+    setUndoStack((prevUndo) => {
+      if (prevUndo.length === 0) return prevUndo;
+      const cmd = prevUndo[prevUndo.length - 1];
+      const nextUndo = prevUndo.slice(0, -1);
+
+      const currentState: EditorSnapshotState = {
+        canvas,
+        tracks,
+        variables,
+        duration,
+        fps,
+        format,
+        selectedId,
+        selectedKeyframeId,
+      };
+
+      const newState = executeCommand(currentState, cmd, true);
+
+      setCanvas(newState.canvas);
+      setTracks(newState.tracks);
+      setVariables(newState.variables);
+      setDuration(newState.duration);
+      setFps(newState.fps);
+      setFormat(newState.format);
+      if (newState.selectedId) setSelectedId(newState.selectedId);
+      if (newState.selectedKeyframeId !== undefined) setSelectedKeyframeId(newState.selectedKeyframeId);
+
+      setRedoStack((prevRedo) => [...prevRedo, cmd]);
+      return nextUndo;
+    });
+  }, [canvas, tracks, variables, duration, fps, format, selectedId, selectedKeyframeId]);
+
+  // Redo last undone command
+  const redo = useCallback(() => {
+    setRedoStack((prevRedo) => {
+      if (prevRedo.length === 0) return prevRedo;
+      const cmd = prevRedo[prevRedo.length - 1];
+      const nextRedo = prevRedo.slice(0, -1);
+
+      const currentState: EditorSnapshotState = {
+        canvas,
+        tracks,
+        variables,
+        duration,
+        fps,
+        format,
+        selectedId,
+        selectedKeyframeId,
+      };
+
+      const newState = executeCommand(currentState, cmd, false);
+
+      setCanvas(newState.canvas);
+      setTracks(newState.tracks);
+      setVariables(newState.variables);
+      setDuration(newState.duration);
+      setFps(newState.fps);
+      setFormat(newState.format);
+      if (newState.selectedId) setSelectedId(newState.selectedId);
+      if (newState.selectedKeyframeId !== undefined) setSelectedKeyframeId(newState.selectedKeyframeId);
+
+      setUndoStack((prevUndo) => [...prevUndo, cmd]);
+      return nextRedo;
+    });
+  }, [canvas, tracks, variables, duration, fps, format, selectedId, selectedKeyframeId]);
+
+  // Project .istudio handlers
+  const handleOpenIStudioFile = useCallback((file: File) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const content = e.target?.result as string;
+      if (!content) return;
+      const res = parseIStudioFile(content);
+      if (res.success && res.project) {
+        const p = res.project;
+        setProjectName(p.name);
+        setCanvas(p.canvas);
+        setTracks(p.tracks);
+        setVariables(p.variables);
+        setDuration(p.export.duration);
+        setFps(p.export.fps);
+        setFormat(p.export.format);
+        setTime(p.export.duration * 0.4);
+        if (p.canvas.elements[0]) {
+          setSelectedId(p.canvas.elements[0].id);
+        }
+        setUndoStack([]);
+        setRedoStack([]);
+        setLastSavedNotice(`Đã mở tệp ${file.name}`);
+        setTimeout(() => setLastSavedNotice(null), 3500);
+      } else {
+        alert(res.error || "Không thể mở tệp .istudio này");
+      }
+    };
+    reader.readAsText(file);
+  }, []);
+
+  const handleSaveAsIStudio = useCallback(() => {
+    const project = createIStudioProject(
+      projectName,
+      canvas,
+      tracks,
+      variables,
+      { duration, fps, format }
+    );
+    downloadIStudioFile(project);
+    setLastSavedNotice(`Đã xuất ${projectName}.istudio`);
+    setTimeout(() => setLastSavedNotice(null), 3500);
+  }, [projectName, canvas, tracks, variables, duration, fps, format]);
+
+  const handleSaveAsWithCustomName = useCallback(
+    (customName: string) => {
+      const finalName = customName.trim() || projectName || "my-animation";
+      setProjectName(finalName);
+      const project = createIStudioProject(
+        finalName,
+        canvas,
+        tracks,
+        variables,
+        { duration, fps, format }
+      );
+      downloadIStudioFile(project, `${finalName.replace(/[/\\?%*:|"<>]/g, "-")}.istudio`);
+      setLastSavedNotice(`Đã lưu tệp ${finalName}.istudio`);
+      setShowSaveAsModal(false);
+      setTimeout(() => setLastSavedNotice(null), 3500);
+    },
+    [projectName, canvas, tracks, variables, duration, fps, format]
+  );
+
+  const handleImportFromJsonText = useCallback((rawText: string) => {
+    setImportError(null);
+    if (!rawText.trim()) {
+      setImportError("Vui lòng dán chuỗi JSON của project.");
+      return;
+    }
+    const res = parseIStudioFile(rawText);
+    if (res.success && res.project) {
+      const p = res.project;
+      setProjectName(p.name);
+      setCanvas(p.canvas);
+      setTracks(p.tracks);
+      setVariables(p.variables);
+      setDuration(p.export.duration);
+      setFps(p.export.fps);
+      setFormat(p.export.format);
+      setTime(p.export.duration * 0.4);
+      if (p.canvas.elements[0]) {
+        setSelectedId(p.canvas.elements[0].id);
+      }
+      setUndoStack([]);
+      setRedoStack([]);
+      setShowImportModal(false);
+      setImportJsonText("");
+      setLastSavedNotice(`Đã nhập thành công project '${p.name}'`);
+      setTimeout(() => setLastSavedNotice(null), 3500);
+    } else {
+      setImportError(res.error || "Chuỗi JSON không đúng định dạng .istudio hợp lệ.");
+    }
+  }, []);
+
+  const handleQuickSave = useCallback(() => {
+    const project = createIStudioProject(
+      projectName,
+      canvas,
+      tracks,
+      variables,
+      { duration, fps, format }
+    );
+    saveProjectToLocalStorage(project);
+    const timeStr = new Date().toLocaleTimeString();
+    setLastSavedNotice(`Đã lưu lúc ${timeStr}`);
+    setTimeout(() => setLastSavedNotice(null), 3500);
+  }, [projectName, canvas, tracks, variables, duration, fps, format]);
+
+  const handleNewProject = useCallback(() => {
+    setShowNewConfirmModal(true);
+  }, []);
+
+  const confirmNewProject = useCallback(() => {
+    const preset = PRESETS[0];
+    setProjectName("New Animation Project");
+    setCanvas(preset.canvas);
+    setTracks(preset.tracks);
+    setVariables(DEFAULT_TEMPLATE_VARIABLES);
+    setDuration(preset.duration);
+    setFps(preset.fps);
+    setFormat("gif");
+    setTime(preset.duration * 0.4);
+    setSelectedId(preset.canvas.elements[0]?.id || "");
+    setSelectedKeyframeId(null);
+    setUndoStack([]);
+    setRedoStack([]);
+    setShowNewConfirmModal(false);
+    setLastSavedNotice("Đã tạo project mới");
+    setTimeout(() => setLastSavedNotice(null), 3500);
+  }, []);
 
   // Computed frame at current playhead time
   const rawFrame = useMemo(() => buildFrame(canvas, tracks, time), [canvas, tracks, time]);
@@ -364,10 +606,34 @@ export function AnimationTimeline() {
     };
   }, [playing, duration]);
 
-  // Keyboard shortcut: Space to play/pause
+  // Keyboard shortcuts: Space to play/pause, Ctrl+Z to undo, Ctrl+Y / Ctrl+Shift+Z to redo, Ctrl+S to save
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
+
+      const isCtrlOrCmd = e.ctrlKey || e.metaKey;
+      if (isCtrlOrCmd && (e.key === "z" || e.key === "Z")) {
+        e.preventDefault();
+        if (e.shiftKey) {
+          redo();
+        } else {
+          undo();
+        }
+        return;
+      }
+
+      if (isCtrlOrCmd && (e.key === "y" || e.key === "Y")) {
+        e.preventDefault();
+        redo();
+        return;
+      }
+
+      if (isCtrlOrCmd && (e.key === "s" || e.key === "S")) {
+        e.preventDefault();
+        handleQuickSave();
+        return;
+      }
+
       if (e.code === "Space") {
         e.preventDefault();
         setPlaying((p) => !p);
@@ -375,7 +641,7 @@ export function AnimationTimeline() {
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, []);
+  }, [undo, redo, handleQuickSave]);
 
   const updateTrack = (id: string, fn: (t: Track) => Track) => {
     setTracks((cur) => {
@@ -426,6 +692,12 @@ export function AnimationTimeline() {
       const updated = nextElements.map((el, i) => ({ ...el, zIndex: i }));
       return { ...prev, elements: updated };
     });
+    pushCommand({
+      type: "REORDER_ELEMENTS",
+      description: `Đổi thứ tự layer (#${fromIndex + 1} ↔ #${toIndex + 1})`,
+      fromIndex,
+      toIndex,
+    });
   };
 
   // Timeline Ruler Scrubbing handler
@@ -463,10 +735,18 @@ export function AnimationTimeline() {
     ev.preventDefault();
     select(elementId, keyframeId);
 
+    const trk = tracks.find((t) => t.elementId === elementId);
+    const targetKf = trk?.keyframes.find(
+      (k) => (k.id || `${elementId}-${k.time}`) === keyframeId
+    );
+    const initialTime = targetKf?.time ?? time;
+    let finalTime = initialTime;
+
     const rect = laneEl.getBoundingClientRect();
     const updateKeyframeTime = (clientX: number) => {
       const ratio = clamp((clientX - rect.left) / rect.width, 0, 1);
       const newTime = Math.round(ratio * duration);
+      finalTime = newTime;
       updateTrack(elementId, (t) => ({
         ...t,
         keyframes: t.keyframes
@@ -485,6 +765,16 @@ export function AnimationTimeline() {
     const onPointerUp = () => {
       window.removeEventListener("pointermove", onPointerMove);
       window.removeEventListener("pointerup", onPointerUp);
+      if (finalTime !== initialTime) {
+        pushCommand({
+          type: "MOVE_KEYFRAME",
+          description: `Chuyển keyframe ${elementId} (${initialTime}ms → ${finalTime}ms)`,
+          elementId,
+          keyframeId,
+          fromTime: initialTime,
+          toTime: finalTime,
+        });
+      }
     };
 
     window.addEventListener("pointermove", onPointerMove);
@@ -510,8 +800,15 @@ export function AnimationTimeline() {
       }));
       select(id, k.id);
       setTime(k.time);
+
+      pushCommand({
+        type: "ADD_KEYFRAME",
+        description: `Thêm keyframe tại ${Math.round(at)}ms`,
+        elementId: id,
+        keyframe: k,
+      });
     },
-    [selectedId, time, canvas.elements, tracks]
+    [selectedId, time, canvas.elements, tracks, pushCommand]
   );
 
   const updateKf = (p: KeyframeProperty | "easing", v: any) => {
@@ -540,6 +837,23 @@ export function AnimationTimeline() {
 
   const deleteKf = (kfId = selectedKeyframeId) => {
     if (!kfId || !selectedTrack || selectedTrack.keyframes.length <= 1) return;
+    const targetKf = selectedTrack.keyframes.find(
+      (k) => (k.id || `${selectedId}-${k.time}`) === kfId
+    );
+    const kfIndex = selectedTrack.keyframes.findIndex(
+      (k) => (k.id || `${selectedId}-${k.time}`) === kfId
+    );
+
+    if (targetKf) {
+      pushCommand({
+        type: "DELETE_KEYFRAME",
+        description: `Xóa keyframe tại ${targetKf.time}ms`,
+        elementId: selectedId,
+        keyframe: targetKf,
+        index: kfIndex,
+      });
+    }
+
     updateTrack(selectedId, (t) => ({
       ...t,
       keyframes: t.keyframes.filter(
@@ -576,22 +890,29 @@ export function AnimationTimeline() {
                     ...(typeof patch.y === "number" ? { y: patch.y } : {}),
                     ...(typeof patch.width === "number" ? { width: patch.width } : {}),
                     ...(typeof patch.height === "number" ? { height: patch.height } : {}),
+                    ...(typeof patch.rotation === "number" ? { rotation: patch.rotation } : {}),
+                    ...(typeof patch.scaleX === "number" ? { scaleX: patch.scaleX } : {}),
+                    ...(typeof patch.scaleY === "number" ? { scaleY: patch.scaleY } : {}),
+                    ...(typeof patch.anchorX === "number" ? { anchorX: patch.anchorX } : {}),
+                    ...(typeof patch.anchorY === "number" ? { anchorY: patch.anchorY } : {}),
                     ...(typeof patch.opacity === "number" ? { opacity: patch.opacity } : {}),
+                    ...(typeof patch.blur === "number" ? { blur: patch.blur } : {}),
+                    ...(typeof patch.brightness === "number" ? { brightness: patch.brightness } : {}),
+                    ...(typeof patch.saturation === "number" ? { saturation: patch.saturation } : {}),
+                    ...(typeof patch.contrast === "number" ? { contrast: patch.contrast } : {}),
+                    ...(typeof patch.fontSize === "number" ? { fontSize: patch.fontSize } : {}),
+                    ...(typeof patch.letterSpacing === "number" ? { letterSpacing: patch.letterSpacing } : {}),
+                    ...(typeof patch.lineHeight === "number" ? { lineHeight: patch.lineHeight } : {}),
+                    ...(typeof patch.color === "string" ? { color: patch.color } : {}),
+                    ...(typeof patch.backgroundColor === "string" ? { backgroundColor: patch.backgroundColor } : {}),
+                    ...(typeof patch.glowColor === "string" ? { glowColor: patch.glowColor } : {}),
+                    ...(typeof patch.glowBlur === "number" ? { glowBlur: patch.glowBlur } : {}),
                   }
                 : k
             ),
           }));
         } else {
-          const newKf: Keyframe = {
-            id: `${id}-${Math.round(time)}-${Date.now()}`,
-            time: Math.round(time),
-            easing: "ease-in-out",
-            x: patch.x ?? e.x,
-            y: patch.y ?? e.y,
-            width: patch.width ?? e.width,
-            height: patch.height ?? e.height,
-            opacity: patch.opacity ?? e.opacity ?? 1,
-          };
+          const newKf = snapshotKeyframe({ ...e, ...patch }, t, time);
           updateTrack(id, (trk) => ({
             ...trk,
             keyframes: [...(trk.keyframes || []), newKf].sort((a, b) => a.time - b.time),
@@ -650,7 +971,33 @@ export function AnimationTimeline() {
     };
 
     const up = () => {
-      dragRef.current = null;
+      if (dragRef.current) {
+        const d = dragRef.current;
+        const finalEl = canvas.elements.find((x) => x.id === d.id);
+        if (finalEl) {
+          if (d.mode === "move" && (finalEl.x !== d.start.x || finalEl.y !== d.start.y)) {
+            pushCommand({
+              type: "MOVE_ELEMENT",
+              description: `Di chuyển layer '${finalEl.content ? finalEl.content.slice(0, 16) : finalEl.id}'`,
+              elementId: d.id,
+              from: { x: d.start.x, y: d.start.y },
+              to: { x: finalEl.x, y: finalEl.y },
+            });
+          } else if (
+            d.mode === "resize" &&
+            (finalEl.width !== d.start.width || finalEl.height !== d.start.height)
+          ) {
+            pushCommand({
+              type: "RESIZE_ELEMENT",
+              description: `Đổi kích thước '${finalEl.content ? finalEl.content.slice(0, 16) : finalEl.id}'`,
+              elementId: d.id,
+              from: { width: d.start.width, height: d.start.height },
+              to: { width: finalEl.width, height: finalEl.height },
+            });
+          }
+        }
+        dragRef.current = null;
+      }
     };
 
     window.addEventListener("pointermove", move);
@@ -659,7 +1006,7 @@ export function AnimationTimeline() {
       window.removeEventListener("pointermove", move);
       window.removeEventListener("pointerup", up);
     };
-  }, [canvas.width, canvas.height, updateCurrentElement]);
+  }, [canvas.width, canvas.height, canvas.elements, updateCurrentElement, pushCommand]);
 
   // Quick alignment helpers
   const alignElement = (type: "centerX" | "centerY" | "left" | "right" | "top" | "bottom") => {
@@ -737,25 +1084,30 @@ export function AnimationTimeline() {
     }
 
     setCanvas((c) => ({ ...c, elements: [...c.elements, base] }));
-    setTracks((t) => [
-      ...t,
-      {
-        elementId: id,
-        keyframes: [
-          {
-            id: `${id}-0`,
-            time: 0,
-            x: base.x,
-            y: base.y,
-            width: base.width,
-            height: base.height,
-            opacity: 1,
-            easing: "ease-in-out",
-          },
-        ],
-      },
-    ]);
+    const newTrack: Track = {
+      elementId: id,
+      keyframes: [
+        {
+          id: `${id}-0`,
+          time: 0,
+          x: base.x,
+          y: base.y,
+          width: base.width,
+          height: base.height,
+          opacity: 1,
+          easing: "ease-in-out",
+        },
+      ],
+    };
+    setTracks((t) => [...t, newTrack]);
     select(id, `${id}-0`);
+
+    pushCommand({
+      type: "ADD_ELEMENT",
+      description: `Thêm layer ${type.toUpperCase()}`,
+      element: base,
+      track: newTrack,
+    });
   };
 
   // Duplicate Element
@@ -779,13 +1131,32 @@ export function AnimationTimeline() {
       y: (k.y ?? selectedElement.y) + 20,
     }));
 
-    setTracks((t) => [...t, { elementId: newId, keyframes: clonedKeyframes }]);
+    const newTrack: Track = { elementId: newId, keyframes: clonedKeyframes };
+    setTracks((t) => [...t, newTrack]);
     select(newId);
+
+    pushCommand({
+      type: "ADD_ELEMENT",
+      description: `Nhân bản layer '${selectedElement.id}'`,
+      element: cloned,
+      track: newTrack,
+    });
   };
 
   // Remove Element
   const removeElement = () => {
     if (!selectedElement) return;
+    const index = canvas.elements.findIndex((e) => e.id === selectedId);
+    const existingTrack = tracks.find((x) => x.elementId === selectedId);
+
+    pushCommand({
+      type: "DELETE_ELEMENT",
+      description: `Xóa layer '${selectedElement.content ? selectedElement.content.slice(0, 16) : selectedElement.id}'`,
+      element: selectedElement,
+      track: existingTrack,
+      index,
+    });
+
     setCanvas((c) => ({ ...c, elements: c.elements.filter((e) => e.id !== selectedId) }));
     setTracks((t) => t.filter((x) => x.elementId !== selectedId));
     setSelectedId(canvas.elements.find((e) => e.id !== selectedId)?.id ?? "");
@@ -897,6 +1268,40 @@ export function AnimationTimeline() {
     }
   };
 
+  // Helper for serializing clean keyframe tracks
+  const cleanTracks = tracks
+    .filter((t) => t.keyframes && t.keyframes.length > 0)
+    .map((t) => ({
+      elementId: t.elementId,
+      keyframes: t.keyframes.map((k) => {
+        const kf: any = { time: Math.round(k.time) };
+        if (k.easing && k.easing !== "ease-in-out") kf.easing = k.easing;
+        if (k.x !== undefined) kf.x = Math.round(k.x);
+        if (k.y !== undefined) kf.y = Math.round(k.y);
+        if (k.width !== undefined) kf.width = Math.round(k.width);
+        if (k.height !== undefined) kf.height = Math.round(k.height);
+        if (k.rotation !== undefined) kf.rotation = Number(k.rotation.toFixed(2));
+        if (k.scaleX !== undefined) kf.scaleX = Number(k.scaleX.toFixed(3));
+        if (k.scaleY !== undefined) kf.scaleY = Number(k.scaleY.toFixed(3));
+        if (k.anchorX !== undefined) kf.anchorX = Number(k.anchorX.toFixed(3));
+        if (k.anchorY !== undefined) kf.anchorY = Number(k.anchorY.toFixed(3));
+        if (k.opacity !== undefined) kf.opacity = Number(k.opacity.toFixed(3));
+        if (k.blur !== undefined) kf.blur = Number(k.blur.toFixed(2));
+        if (k.brightness !== undefined) kf.brightness = Math.round(k.brightness);
+        if (k.saturation !== undefined) kf.saturation = Math.round(k.saturation);
+        if (k.contrast !== undefined) kf.contrast = Math.round(k.contrast);
+        if (k.fontSize !== undefined) kf.fontSize = Math.round(k.fontSize);
+        if (k.letterSpacing !== undefined) kf.letterSpacing = Number(k.letterSpacing.toFixed(2));
+        if (k.lineHeight !== undefined) kf.lineHeight = Number(k.lineHeight.toFixed(2));
+        if (k.color !== undefined) kf.color = k.color;
+        if (k.backgroundColor !== undefined) kf.backgroundColor = k.backgroundColor;
+        if (k.glowColor !== undefined) kf.glowColor = k.glowColor;
+        if (k.glowBlur !== undefined) kf.glowBlur = Math.round(k.glowBlur);
+        if (k.transform !== undefined) kf.transform = k.transform;
+        return kf;
+      }),
+    }));
+
   // Export Single PNG Frame at current playhead time
   const exportCurrentFramePng = async () => {
     setExportError(null);
@@ -904,22 +1309,6 @@ export function AnimationTimeline() {
     const roundedTime = Math.round(time);
     setExportProgress(`Compiling PNG frame at ${roundedTime}ms on server...`);
     try {
-      const cleanTracks = tracks
-        .filter((t) => t.keyframes && t.keyframes.length > 0)
-        .map((t) => ({
-          elementId: t.elementId,
-          keyframes: t.keyframes.map((k) => {
-            const kf: any = { time: Math.round(k.time) };
-            if (k.easing && k.easing !== "ease-in-out") kf.easing = k.easing;
-            if (k.x !== undefined) kf.x = Math.round(k.x);
-            if (k.y !== undefined) kf.y = Math.round(k.y);
-            if (k.width !== undefined) kf.width = Math.round(k.width);
-            if (k.height !== undefined) kf.height = Math.round(k.height);
-            if (k.opacity !== undefined) kf.opacity = Number(k.opacity.toFixed(3));
-            return kf;
-          }),
-        }));
-
       const payload = {
         type: "animated",
         data: {
@@ -1002,22 +1391,6 @@ export function AnimationTimeline() {
             })),
           }
         : canvas;
-
-      const cleanTracks = tracks
-        .filter((t) => t.keyframes && t.keyframes.length > 0)
-        .map((t) => ({
-          elementId: t.elementId,
-          keyframes: t.keyframes.map((k) => {
-            const kf: any = { time: Math.round(k.time) };
-            if (k.easing && k.easing !== "ease-in-out") kf.easing = k.easing;
-            if (k.x !== undefined) kf.x = Math.round(k.x);
-            if (k.y !== undefined) kf.y = Math.round(k.y);
-            if (k.width !== undefined) kf.width = Math.round(k.width);
-            if (k.height !== undefined) kf.height = Math.round(k.height);
-            if (k.opacity !== undefined) kf.opacity = Number(k.opacity.toFixed(3));
-            return kf;
-          }),
-        }));
 
       const payloadObj: any = {
         type: "animated",
@@ -1279,6 +1652,193 @@ export function AnimationTimeline() {
         </div>
       </div>
 
+      {/* Project (.istudio) & Command History Toolbar */}
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-white/10 bg-[#0d091d]/90 px-4 py-3 shadow-xl backdrop-blur-md">
+        {/* Left: Project File Controls */}
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="flex items-center gap-1.5 rounded-xl border border-purple-500/30 bg-black/50 px-3 py-1.5 text-xs shadow-inner">
+            <FileCode className="h-4 w-4 text-purple-400 shrink-0" />
+            <input
+              type="text"
+              value={projectName}
+              onChange={(e) => setProjectName(e.target.value)}
+              placeholder="Tên project"
+              className="w-36 sm:w-48 bg-transparent text-xs font-semibold text-white outline-none focus:text-purple-200"
+              title="Bấm để đổi tên project"
+            />
+            <span className="rounded bg-purple-900/60 px-1.5 py-0.5 text-[10px] font-mono font-bold text-purple-300">
+              .istudio
+            </span>
+          </div>
+
+          {/* File operations: New, Open, Save, Save As, Import, Export */}
+          <button
+            onClick={handleNewProject}
+            className="flex items-center gap-1.5 rounded-xl border border-white/10 bg-white/5 px-2.5 py-1.5 text-xs font-semibold text-slate-300 hover:bg-white/10 hover:text-white transition"
+            title="Tạo mới animation project (New)"
+          >
+            <FilePlus className="h-3.5 w-3.5 text-slate-400" />
+            <span>Mới</span>
+          </button>
+
+          <button
+            onClick={() => fileInputRef.current?.click()}
+            className="flex items-center gap-1.5 rounded-xl border border-white/10 bg-white/5 px-2.5 py-1.5 text-xs font-semibold text-slate-300 hover:bg-white/10 hover:text-white transition"
+            title="Mở file .istudio hoặc .json từ máy tính (Open)"
+          >
+            <FolderOpen className="h-3.5 w-3.5 text-amber-400" />
+            <span>Mở</span>
+          </button>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".istudio,.json"
+            className="hidden"
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              if (file) handleOpenIStudioFile(file);
+              e.target.value = "";
+            }}
+          />
+
+          <button
+            onClick={handleQuickSave}
+            className="flex items-center gap-1.5 rounded-xl border border-white/10 bg-white/5 px-2.5 py-1.5 text-xs font-semibold text-slate-300 hover:bg-white/10 hover:text-white transition"
+            title="Lưu nhanh vào bộ nhớ trình duyệt (Ctrl+S)"
+          >
+            <Save className="h-3.5 w-3.5 text-emerald-400" />
+            <span>Lưu</span>
+          </button>
+
+          <button
+            onClick={() => {
+              setSaveAsFilename(projectName);
+              setShowSaveAsModal(true);
+            }}
+            className="flex items-center gap-1.5 rounded-xl border border-white/10 bg-white/5 px-2.5 py-1.5 text-xs font-semibold text-slate-300 hover:bg-white/10 hover:text-white transition"
+            title="Lưu với tên mới hoặc vị trí khác (Save As)"
+          >
+            <Copy className="h-3.5 w-3.5 text-cyan-400" />
+            <span>Lưu thành...</span>
+          </button>
+
+          <button
+            onClick={() => {
+              setImportError(null);
+              setImportJsonText("");
+              setShowImportModal(true);
+            }}
+            className="flex items-center gap-1.5 rounded-xl border border-white/10 bg-white/5 px-2.5 py-1.5 text-xs font-semibold text-slate-300 hover:bg-white/10 hover:text-white transition"
+            title="Nhập dữ liệu project từ file hoặc dán JSON (Import)"
+          >
+            <Upload className="h-3.5 w-3.5 text-sky-400" />
+            <span>Nhập</span>
+          </button>
+
+          <button
+            onClick={handleSaveAsIStudio}
+            className="flex items-center gap-1.5 rounded-xl border border-indigo-500/30 bg-indigo-950/40 px-3 py-1.5 text-xs font-semibold text-indigo-200 hover:bg-indigo-900/60 hover:text-white transition shadow-sm"
+            title="Xuất tải về máy tính tệp dự án .istudio (Export)"
+          >
+            <FileDown className="h-3.5 w-3.5 text-indigo-400" />
+            <span>Xuất .istudio</span>
+          </button>
+
+          {lastSavedNotice && (
+            <span className="text-[11px] text-emerald-400 flex items-center gap-1 font-mono animate-in fade-in ml-2">
+              <Check className="h-3.5 w-3.5" /> {lastSavedNotice}
+            </span>
+          )}
+        </div>
+
+        {/* Right: History Undo / Redo / History List */}
+        <div className="flex items-center gap-1.5 relative">
+          <button
+            onClick={undo}
+            disabled={undoStack.length === 0}
+            className="flex items-center gap-1.5 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs font-semibold text-slate-300 hover:bg-white/10 hover:text-white transition disabled:opacity-40 disabled:cursor-not-allowed"
+            title={`Hoàn tác (Ctrl+Z) - ${undoStack.length > 0 ? undoStack[undoStack.length - 1].description : "Không có thao tác"}`}
+          >
+            <Undo2 className="h-3.5 w-3.5" />
+            <span>Undo</span>
+            {undoStack.length > 0 && (
+              <span className="ml-0.5 rounded-full bg-purple-500/30 px-1.5 py-0.2 text-[10px] font-mono text-purple-300">
+                {undoStack.length}
+              </span>
+            )}
+          </button>
+
+          <button
+            onClick={redo}
+            disabled={redoStack.length === 0}
+            className="flex items-center gap-1.5 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs font-semibold text-slate-300 hover:bg-white/10 hover:text-white transition disabled:opacity-40 disabled:cursor-not-allowed"
+            title={`Làm lại (Ctrl+Y / Ctrl+Shift+Z) - ${redoStack.length > 0 ? redoStack[redoStack.length - 1].description : "Không có thao tác"}`}
+          >
+            <Redo2 className="h-3.5 w-3.5" />
+            <span>Redo</span>
+            {redoStack.length > 0 && (
+              <span className="ml-0.5 rounded-full bg-indigo-500/30 px-1.5 py-0.2 text-[10px] font-mono text-indigo-300">
+                {redoStack.length}
+              </span>
+            )}
+          </button>
+
+          <button
+            onClick={() => setShowHistoryDropdown((v) => !v)}
+            className={`flex items-center gap-1.5 rounded-xl border px-3 py-2 text-xs font-semibold transition ${
+              showHistoryDropdown
+                ? "border-purple-400 bg-purple-900/40 text-purple-200 ring-2 ring-purple-400/40"
+                : "border-white/10 bg-white/5 text-slate-300 hover:bg-white/10 hover:text-white"
+            }`}
+            title="Xem danh sách lịch sử lệnh"
+          >
+            <HistoryIcon className="h-3.5 w-3.5 text-purple-400" />
+            <span className="hidden sm:inline">Lịch sử</span>
+          </button>
+
+          {/* Floating History Dropdown */}
+          {showHistoryDropdown && (
+            <div className="absolute right-0 top-12 z-50 w-80 rounded-2xl border border-white/15 bg-[#140f28] p-3.5 shadow-2xl backdrop-blur-xl animate-in fade-in duration-150">
+              <div className="flex items-center justify-between border-b border-white/10 pb-2.5 mb-2.5">
+                <span className="text-xs font-bold text-white flex items-center gap-1.5">
+                  <HistoryIcon className="h-3.5 w-3.5 text-purple-400" />
+                  Lịch sử thao tác ({undoStack.length})
+                </span>
+                <button
+                  onClick={() => {
+                    setUndoStack([]);
+                    setRedoStack([]);
+                  }}
+                  className="text-[10px] text-slate-400 hover:text-red-400 transition"
+                  title="Xóa bộ nhớ lịch sử"
+                >
+                  Xóa lịch sử
+                </button>
+              </div>
+              {undoStack.length === 0 ? (
+                <div className="py-6 text-center text-xs text-slate-500">Chưa có thao tác nào trong bộ nhớ</div>
+              ) : (
+                <div className="max-h-64 overflow-y-auto space-y-1.5 pr-1">
+                  {[...undoStack].reverse().map((cmd, idx) => (
+                    <div
+                      key={idx}
+                      className="flex items-center justify-between rounded-xl bg-white/5 px-2.5 py-2 text-[11px] text-slate-300 hover:bg-white/10"
+                    >
+                      <span className="truncate max-w-[200px]">
+                        {undoStack.length - idx}. {cmd.description}
+                      </span>
+                      <span className="font-mono text-[9px] text-purple-400 bg-purple-950/60 border border-purple-500/20 px-1 py-0.5 rounded shrink-0">
+                        {cmd.type.replace("_ELEMENT", "").replace("_KEYFRAME", "")}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+
       {exportError && (
         <div className="rounded-xl border border-red-500/30 bg-red-950/60 p-3 text-xs text-red-200">
           <span className="font-semibold">Export Failed: </span>
@@ -1527,10 +2087,21 @@ export function AnimationTimeline() {
               </div>
             </div>
 
-            {/* Canvas Viewport Box */}
+            {/* Canvas Viewport Box with drag-and-drop .istudio project file support */}
             <div
               ref={previewContainerRef}
-              className="relative flex min-h-[380px] max-h-[520px] items-center justify-center overflow-auto rounded-xl border border-white/10 bg-black/50 p-6"
+              onDragOver={(e) => {
+                e.preventDefault();
+                e.dataTransfer.dropEffect = "copy";
+              }}
+              onDrop={(e) => {
+                e.preventDefault();
+                const file = e.dataTransfer.files?.[0];
+                if (file && (file.name.endsWith(".istudio") || file.name.endsWith(".json"))) {
+                  handleOpenIStudioFile(file);
+                }
+              }}
+              className="relative flex min-h-[380px] max-h-[520px] items-center justify-center overflow-auto rounded-xl border border-white/10 bg-black/50 p-6 group/viewport"
             >
               <div
                 ref={previewRef}
@@ -1572,6 +2143,20 @@ export function AnimationTimeline() {
                           width: e.width * zoom,
                           height: e.height * zoom,
                           opacity: e.opacity ?? 1,
+                          transform:
+                            (e.rotation || (e.scaleX !== undefined && e.scaleX !== 1) || (e.scaleY !== undefined && e.scaleY !== 1))
+                              ? `rotate(${e.rotation ?? 0}deg) scale(${e.scaleX ?? 1}, ${e.scaleY ?? 1})`
+                              : undefined,
+                          transformOrigin: `${(e.anchorX ?? 0.5) * 100}% ${(e.anchorY ?? 0.5) * 100}%`,
+                          filter:
+                            [
+                              e.blur ? `blur(${e.blur}px)` : "",
+                              e.brightness !== undefined && e.brightness !== 100 ? `brightness(${e.brightness}%)` : "",
+                              e.saturation !== undefined && e.saturation !== 100 ? `saturate(${e.saturation}%)` : "",
+                              e.contrast !== undefined && e.contrast !== 100 ? `contrast(${e.contrast}%)` : "",
+                            ]
+                              .filter(Boolean)
+                              .join(" ") || undefined,
                         }}
                       >
                         {/* Visual content */}
@@ -1586,6 +2171,8 @@ export function AnimationTimeline() {
                               border: e.border,
                               fontSize: (e.fontSize ?? 24) * zoom,
                               fontWeight: e.fontWeight ?? 400,
+                              letterSpacing: e.letterSpacing !== undefined ? `${e.letterSpacing * zoom}px` : undefined,
+                              lineHeight: e.lineHeight ?? 1.2,
                               display: "flex",
                               alignItems: "center",
                               justifyContent:
@@ -1925,7 +2512,7 @@ export function AnimationTimeline() {
         <div className="space-y-4">
           {/* Keyframe Inspector Panel */}
           {selectedKeyframe && (
-            <div className="rounded-2xl border border-purple-500/30 bg-purple-950/30 p-4 shadow-xl backdrop-blur-md space-y-3">
+            <div className="rounded-2xl border border-purple-500/30 bg-purple-950/30 p-4 shadow-xl backdrop-blur-md space-y-3.5 max-h-[600px] overflow-y-auto pr-1">
               <div className="flex items-center justify-between border-b border-purple-500/20 pb-2">
                 <span className="flex items-center gap-1.5 text-xs font-bold text-purple-200">
                   <KeyRound className="h-3.5 w-3.5 text-purple-400" />
@@ -1950,7 +2537,7 @@ export function AnimationTimeline() {
                     max={duration}
                     value={selectedKeyframe.time}
                     onChange={(e) => moveKf(Number(e.target.value))}
-                    className="mt-1 w-full rounded-lg border border-white/10 bg-black/40 px-2 py-1.5 text-xs text-white outline-none focus:border-purple-500"
+                    className="mt-1 w-full rounded-lg border border-white/10 bg-black/40 px-2 py-1.5 text-xs text-white outline-none focus:border-purple-500 font-mono"
                   />
                 </label>
                 <label className="block text-[11px] text-slate-400">
@@ -1965,66 +2552,419 @@ export function AnimationTimeline() {
                     <option value="ease-in">Ease In</option>
                     <option value="ease-out">Ease Out</option>
                     <option value="bounce">Bounce</option>
+                    <option value="elastic">Elastic</option>
+                    <option value="spring">Spring</option>
                   </select>
                 </label>
               </div>
 
-              {/* Position & Size */}
-              <div className="grid grid-cols-2 gap-2">
-                <label className="block text-[11px] text-slate-400">
-                  X
-                  <input
-                    type="number"
-                    value={selectedKeyframe.x ?? 0}
-                    onChange={(e) => updateKf("x", Number(e.target.value))}
-                    className="mt-1 w-full rounded-lg border border-white/10 bg-black/40 px-2 py-1.5 text-xs text-white outline-none focus:border-purple-500"
-                  />
-                </label>
-                <label className="block text-[11px] text-slate-400">
-                  Y
-                  <input
-                    type="number"
-                    value={selectedKeyframe.y ?? 0}
-                    onChange={(e) => updateKf("y", Number(e.target.value))}
-                    className="mt-1 w-full rounded-lg border border-white/10 bg-black/40 px-2 py-1.5 text-xs text-white outline-none focus:border-purple-500"
-                  />
-                </label>
-                <label className="block text-[11px] text-slate-400">
-                  Width
-                  <input
-                    type="number"
-                    value={selectedKeyframe.width ?? 100}
-                    onChange={(e) => updateKf("width", Number(e.target.value))}
-                    className="mt-1 w-full rounded-lg border border-white/10 bg-black/40 px-2 py-1.5 text-xs text-white outline-none focus:border-purple-500"
-                  />
-                </label>
-                <label className="block text-[11px] text-slate-400">
-                  Height
-                  <input
-                    type="number"
-                    value={selectedKeyframe.height ?? 100}
-                    onChange={(e) => updateKf("height", Number(e.target.value))}
-                    className="mt-1 w-full rounded-lg border border-white/10 bg-black/40 px-2 py-1.5 text-xs text-white outline-none focus:border-purple-500"
-                  />
-                </label>
+              {/* 1. POSITION */}
+              <div className="rounded-xl border border-white/5 bg-black/25 p-2.5 space-y-2">
+                <div className="text-[10px] font-semibold uppercase tracking-wider text-purple-300 flex items-center gap-1">
+                  <span>📍 Position</span>
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <label className="block text-[11px] text-slate-400">
+                    X
+                    <input
+                      type="number"
+                      value={selectedKeyframe.x ?? selectedElement?.x ?? 0}
+                      onChange={(e) => updateKf("x", Number(e.target.value))}
+                      className="mt-1 w-full rounded-lg border border-white/10 bg-black/40 px-2 py-1.5 text-xs text-white outline-none focus:border-purple-500 font-mono"
+                    />
+                  </label>
+                  <label className="block text-[11px] text-slate-400">
+                    Y
+                    <input
+                      type="number"
+                      value={selectedKeyframe.y ?? selectedElement?.y ?? 0}
+                      onChange={(e) => updateKf("y", Number(e.target.value))}
+                      className="mt-1 w-full rounded-lg border border-white/10 bg-black/40 px-2 py-1.5 text-xs text-white outline-none focus:border-purple-500 font-mono"
+                    />
+                  </label>
+                </div>
               </div>
 
-              {/* Opacity slider */}
-              <div>
-                <div className="flex justify-between text-[11px] text-slate-400 mb-1">
-                  <span>Opacity</span>
-                  <span className="font-mono">{Math.round((selectedKeyframe.opacity ?? 1) * 100)}%</span>
+              {/* 2. TRANSFORM (Width, Height, Rotation, Scale X, Scale Y, Anchor) */}
+              <div className="rounded-xl border border-white/5 bg-black/25 p-2.5 space-y-2.5">
+                <div className="text-[10px] font-semibold uppercase tracking-wider text-purple-300 flex items-center justify-between">
+                  <span>🔄 Transform</span>
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        updateKf("rotation", 0);
+                        updateKf("scaleX", 1);
+                        updateKf("scaleY", 1);
+                      }}
+                      className="text-[9px] text-slate-400 hover:text-purple-300 underline"
+                      title="Reset Rotation & Scale to defaults"
+                    >
+                      Reset 0°/1x
+                    </button>
+                  </div>
                 </div>
-                <input
-                  type="range"
-                  min="0"
-                  max="1"
-                  step="0.05"
-                  value={selectedKeyframe.opacity ?? 1}
-                  onChange={(e) => updateKf("opacity", Number(e.target.value))}
-                  className="w-full accent-purple-500"
+
+                {/* Size: Width & Height */}
+                <div className="grid grid-cols-2 gap-2">
+                  <label className="block text-[11px] text-slate-400">
+                    Width
+                    <input
+                      type="number"
+                      value={selectedKeyframe.width ?? selectedElement?.width ?? 100}
+                      onChange={(e) => updateKf("width", Number(e.target.value))}
+                      className="mt-1 w-full rounded-lg border border-white/10 bg-black/40 px-2 py-1.5 text-xs text-white outline-none focus:border-purple-500 font-mono"
+                    />
+                  </label>
+                  <label className="block text-[11px] text-slate-400">
+                    Height
+                    <input
+                      type="number"
+                      value={selectedKeyframe.height ?? selectedElement?.height ?? 100}
+                      onChange={(e) => updateKf("height", Number(e.target.value))}
+                      className="mt-1 w-full rounded-lg border border-white/10 bg-black/40 px-2 py-1.5 text-xs text-white outline-none focus:border-purple-500 font-mono"
+                    />
+                  </label>
+                </div>
+
+                {/* Rotation: Slider & Input */}
+                <div className="space-y-1">
+                  <div className="flex items-center justify-between text-[11px] text-slate-400">
+                    <span>Rotation</span>
+                    <div className="flex items-center gap-1">
+                      <span className="font-mono text-purple-300 font-medium">
+                        {Math.round(selectedKeyframe.rotation ?? selectedElement?.rotation ?? 0)}°
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => updateKf("rotation", 0)}
+                        className="text-[9px] text-slate-500 hover:text-white px-1 rounded bg-white/5"
+                        title="Set rotation to 0°"
+                      >
+                        0°
+                      </button>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="range"
+                      min="-180"
+                      max="180"
+                      step="1"
+                      value={selectedKeyframe.rotation ?? selectedElement?.rotation ?? 0}
+                      onChange={(e) => updateKf("rotation", Number(e.target.value))}
+                      className="w-full accent-purple-500 cursor-pointer"
+                    />
+                    <input
+                      type="number"
+                      min="-360"
+                      max="360"
+                      value={selectedKeyframe.rotation ?? selectedElement?.rotation ?? 0}
+                      onChange={(e) => updateKf("rotation", Number(e.target.value))}
+                      className="w-16 rounded-lg border border-white/10 bg-black/40 px-1.5 py-1 text-xs text-right text-white font-mono"
+                    />
+                  </div>
+                  {/* Quick rotation degree chips */}
+                  <div className="flex items-center gap-1 pt-0.5">
+                    {[-45, -15, -10, 0, 10, 15, 45, 90].map((deg) => (
+                      <button
+                        key={deg}
+                        type="button"
+                        onClick={() => updateKf("rotation", deg)}
+                        className={`text-[9px] px-1 py-0.5 rounded font-mono transition ${
+                          Math.round(selectedKeyframe.rotation ?? selectedElement?.rotation ?? 0) === deg
+                            ? "bg-purple-600 text-white font-bold"
+                            : "bg-white/5 text-slate-400 hover:bg-white/10 hover:text-white"
+                        }`}
+                      >
+                        {deg}°
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Scale X & Scale Y */}
+                <div className="grid grid-cols-2 gap-2 pt-1">
+                  <div className="space-y-1">
+                    <div className="flex justify-between text-[11px] text-slate-400">
+                      <span>Scale X</span>
+                      <span className="font-mono text-purple-300">
+                        {Number((selectedKeyframe.scaleX ?? selectedElement?.scaleX ?? 1).toFixed(2))}x
+                      </span>
+                    </div>
+                    <input
+                      type="range"
+                      min="0.1"
+                      max="3"
+                      step="0.05"
+                      value={selectedKeyframe.scaleX ?? selectedElement?.scaleX ?? 1}
+                      onChange={(e) => updateKf("scaleX", Number(e.target.value))}
+                      className="w-full accent-purple-500 cursor-pointer"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <div className="flex justify-between text-[11px] text-slate-400">
+                      <span>Scale Y</span>
+                      <span className="font-mono text-purple-300">
+                        {Number((selectedKeyframe.scaleY ?? selectedElement?.scaleY ?? 1).toFixed(2))}x
+                      </span>
+                    </div>
+                    <input
+                      type="range"
+                      min="0.1"
+                      max="3"
+                      step="0.05"
+                      value={selectedKeyframe.scaleY ?? selectedElement?.scaleY ?? 1}
+                      onChange={(e) => updateKf("scaleY", Number(e.target.value))}
+                      className="w-full accent-purple-500 cursor-pointer"
+                    />
+                  </div>
+                </div>
+
+                {/* Anchor Point X & Y */}
+                <div className="pt-1 border-t border-white/5">
+                  <div className="flex items-center justify-between text-[11px] text-slate-400 mb-1">
+                    <span>Anchor (Tâm xoay)</span>
+                    <div className="flex items-center gap-1 text-[9px]">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          updateKf("anchorX", 0.5);
+                          updateKf("anchorY", 0.5);
+                        }}
+                        className="px-1 py-0.5 rounded bg-white/5 hover:bg-purple-900/50 hover:text-white"
+                      >
+                        Center (50%)
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          updateKf("anchorX", 0);
+                          updateKf("anchorY", 0);
+                        }}
+                        className="px-1 py-0.5 rounded bg-white/5 hover:bg-purple-900/50 hover:text-white"
+                      >
+                        Top-Left
+                      </button>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <label className="block text-[10px] text-slate-500">
+                      Anchor X (0..1)
+                      <input
+                        type="number"
+                        min="0"
+                        max="1"
+                        step="0.1"
+                        value={selectedKeyframe.anchorX ?? selectedElement?.anchorX ?? 0.5}
+                        onChange={(e) => updateKf("anchorX", Number(e.target.value))}
+                        className="mt-0.5 w-full rounded border border-white/10 bg-black/40 px-2 py-1 text-xs text-white outline-none focus:border-purple-500 font-mono"
+                      />
+                    </label>
+                    <label className="block text-[10px] text-slate-500">
+                      Anchor Y (0..1)
+                      <input
+                        type="number"
+                        min="0"
+                        max="1"
+                        step="0.1"
+                        value={selectedKeyframe.anchorY ?? selectedElement?.anchorY ?? 0.5}
+                        onChange={(e) => updateKf("anchorY", Number(e.target.value))}
+                        className="mt-0.5 w-full rounded border border-white/10 bg-black/40 px-2 py-1 text-xs text-white outline-none focus:border-purple-500 font-mono"
+                      />
+                    </label>
+                  </div>
+                </div>
+              </div>
+
+              {/* 3. APPEARANCE (Opacity, Blur, Brightness, Saturation, Contrast) */}
+              <div className="rounded-xl border border-white/5 bg-black/25 p-2.5 space-y-2.5">
+                <div className="text-[10px] font-semibold uppercase tracking-wider text-purple-300">
+                  ✨ Appearance & Filters
+                </div>
+
+                {/* Opacity */}
+                <div>
+                  <div className="flex justify-between text-[11px] text-slate-400 mb-0.5">
+                    <span>Opacity</span>
+                    <span className="font-mono text-purple-300">
+                      {Math.round((selectedKeyframe.opacity ?? selectedElement?.opacity ?? 1) * 100)}%
+                    </span>
+                  </div>
+                  <input
+                    type="range"
+                    min="0"
+                    max="1"
+                    step="0.05"
+                    value={selectedKeyframe.opacity ?? selectedElement?.opacity ?? 1}
+                    onChange={(e) => updateKf("opacity", Number(e.target.value))}
+                    className="w-full accent-purple-500 cursor-pointer"
+                  />
+                </div>
+
+                {/* Blur */}
+                <div>
+                  <div className="flex justify-between text-[11px] text-slate-400 mb-0.5">
+                    <span>Blur (Độ mờ)</span>
+                    <span className="font-mono text-purple-300">
+                      {selectedKeyframe.blur ?? selectedElement?.blur ?? 0}px
+                    </span>
+                  </div>
+                  <input
+                    type="range"
+                    min="0"
+                    max="20"
+                    step="0.5"
+                    value={selectedKeyframe.blur ?? selectedElement?.blur ?? 0}
+                    onChange={(e) => updateKf("blur", Number(e.target.value))}
+                    className="w-full accent-purple-500 cursor-pointer"
+                  />
+                </div>
+
+                {/* Brightness & Contrast */}
+                <div className="grid grid-cols-2 gap-2 pt-0.5">
+                  <div>
+                    <div className="flex justify-between text-[10px] text-slate-400 mb-0.5">
+                      <span>Brightness</span>
+                      <span className="font-mono text-purple-300">
+                        {selectedKeyframe.brightness ?? selectedElement?.brightness ?? 100}%
+                      </span>
+                    </div>
+                    <input
+                      type="range"
+                      min="20"
+                      max="200"
+                      step="5"
+                      value={selectedKeyframe.brightness ?? selectedElement?.brightness ?? 100}
+                      onChange={(e) => updateKf("brightness", Number(e.target.value))}
+                      className="w-full accent-purple-500 cursor-pointer"
+                    />
+                  </div>
+                  <div>
+                    <div className="flex justify-between text-[10px] text-slate-400 mb-0.5">
+                      <span>Contrast</span>
+                      <span className="font-mono text-purple-300">
+                        {selectedKeyframe.contrast ?? selectedElement?.contrast ?? 100}%
+                      </span>
+                    </div>
+                    <input
+                      type="range"
+                      min="20"
+                      max="200"
+                      step="5"
+                      value={selectedKeyframe.contrast ?? selectedElement?.contrast ?? 100}
+                      onChange={(e) => updateKf("contrast", Number(e.target.value))}
+                      className="w-full accent-purple-500 cursor-pointer"
+                    />
+                  </div>
+                </div>
+
+                {/* Saturation */}
+                <div>
+                  <div className="flex justify-between text-[11px] text-slate-400 mb-0.5">
+                    <span>Saturation (Độ bão hòa màu)</span>
+                    <span className="font-mono text-purple-300">
+                      {selectedKeyframe.saturation ?? selectedElement?.saturation ?? 100}%
+                    </span>
+                  </div>
+                  <input
+                    type="range"
+                    min="0"
+                    max="200"
+                    step="5"
+                    value={selectedKeyframe.saturation ?? selectedElement?.saturation ?? 100}
+                    onChange={(e) => updateKf("saturation", Number(e.target.value))}
+                    className="w-full accent-purple-500 cursor-pointer"
+                  />
+                </div>
+              </div>
+
+              {/* 4. COLOR & GLOW */}
+              <div className="rounded-xl border border-white/5 bg-black/25 p-2.5 space-y-2.5">
+                <div className="text-[10px] font-semibold uppercase tracking-wider text-purple-300">
+                  🎨 Color & Glow
+                </div>
+
+                {selectedElement?.type === "text" || selectedElement?.type === "badge" ? (
+                  <ColorPalettePicker
+                    label="Màu chữ (Text Color)"
+                    value={selectedKeyframe.color || selectedElement?.color || "#ffffff"}
+                    onChange={(newCol) => updateKf("color", newCol)}
+                  />
+                ) : null}
+
+                {selectedElement?.type === "badge" || selectedElement?.type === "box" || selectedElement?.type === "progress" ? (
+                  <ColorPalettePicker
+                    label="Màu nền (Background)"
+                    value={selectedKeyframe.backgroundColor || selectedElement?.backgroundColor || "#7c3aed"}
+                    onChange={(newCol) => updateKf("backgroundColor", newCol)}
+                  />
+                ) : null}
+
+                <div className="space-y-1">
+                  <div className="flex justify-between text-[11px] text-slate-400">
+                    <span>Glow Blur</span>
+                    <span className="font-mono text-purple-300">
+                      {selectedKeyframe.glowBlur ?? selectedElement?.glowBlur ?? 16}px
+                    </span>
+                  </div>
+                  <input
+                    type="range"
+                    min="0"
+                    max="40"
+                    step="1"
+                    value={selectedKeyframe.glowBlur ?? selectedElement?.glowBlur ?? 16}
+                    onChange={(e) => updateKf("glowBlur", Number(e.target.value))}
+                    className="w-full accent-purple-500 cursor-pointer"
+                  />
+                </div>
+
+                <ColorPalettePicker
+                  label="Màu hào quang (Glow Color)"
+                  value={selectedKeyframe.glowColor || selectedElement?.glowColor || "#c084fc"}
+                  onChange={(newCol) => updateKf("glowColor", newCol)}
                 />
               </div>
+
+              {/* 5. TYPOGRAPHY (For text/badge) */}
+              {(selectedElement?.type === "text" || selectedElement?.type === "badge") && (
+                <div className="rounded-xl border border-white/5 bg-black/25 p-2.5 space-y-2">
+                  <div className="text-[10px] font-semibold uppercase tracking-wider text-purple-300">
+                    ✍️ Typography
+                  </div>
+                  <div className="grid grid-cols-3 gap-1.5">
+                    <label className="block text-[10px] text-slate-400">
+                      Font Size
+                      <input
+                        type="number"
+                        value={selectedKeyframe.fontSize ?? selectedElement?.fontSize ?? 24}
+                        onChange={(e) => updateKf("fontSize", Number(e.target.value))}
+                        className="mt-0.5 w-full rounded border border-white/10 bg-black/40 px-1.5 py-1 text-xs text-white outline-none focus:border-purple-500 font-mono"
+                      />
+                    </label>
+                    <label className="block text-[10px] text-slate-400">
+                      Spacing
+                      <input
+                        type="number"
+                        step="0.5"
+                        value={selectedKeyframe.letterSpacing ?? selectedElement?.letterSpacing ?? 0}
+                        onChange={(e) => updateKf("letterSpacing", Number(e.target.value))}
+                        className="mt-0.5 w-full rounded border border-white/10 bg-black/40 px-1.5 py-1 text-xs text-white outline-none focus:border-purple-500 font-mono"
+                      />
+                    </label>
+                    <label className="block text-[10px] text-slate-400">
+                      Line Height
+                      <input
+                        type="number"
+                        step="0.1"
+                        value={selectedKeyframe.lineHeight ?? selectedElement?.lineHeight ?? 1.2}
+                        onChange={(e) => updateKf("lineHeight", Number(e.target.value))}
+                        className="mt-0.5 w-full rounded border border-white/10 bg-black/40 px-1.5 py-1 text-xs text-white outline-none focus:border-purple-500 font-mono"
+                      />
+                    </label>
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
@@ -2311,6 +3251,279 @@ export function AnimationTimeline() {
                   )}
                 </div>
               )}
+
+              {/* Extended Typography for text or badge */}
+              {(selectedElement.type === "text" || selectedElement.type === "badge") && (
+                <div className="rounded-xl border border-white/5 bg-black/20 p-2.5 space-y-2">
+                  <div className="text-[11px] font-semibold text-slate-300">
+                    ✍️ Typography chi tiết
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <label className="block text-[10px] text-slate-400">
+                      Letter Spacing (px)
+                      <input
+                        type="number"
+                        step="0.5"
+                        value={selectedElement.letterSpacing ?? 0}
+                        onChange={(e) =>
+                          updateCurrentElement(selectedElement.id, { letterSpacing: Number(e.target.value) })
+                        }
+                        className="mt-0.5 w-full rounded border border-white/10 bg-black/40 px-2 py-1 text-xs text-white outline-none focus:border-purple-500 font-mono"
+                      />
+                    </label>
+                    <label className="block text-[10px] text-slate-400">
+                      Line Height
+                      <input
+                        type="number"
+                        step="0.1"
+                        value={selectedElement.lineHeight ?? 1.2}
+                        onChange={(e) =>
+                          updateCurrentElement(selectedElement.id, { lineHeight: Number(e.target.value) })
+                        }
+                        className="mt-0.5 w-full rounded border border-white/10 bg-black/40 px-2 py-1 text-xs text-white outline-none focus:border-purple-500 font-mono"
+                      />
+                    </label>
+                  </div>
+                </div>
+              )}
+
+              {/* Position & Transform Controls for Element */}
+              <div className="rounded-xl border border-white/5 bg-black/20 p-2.5 space-y-2.5">
+                <div className="flex items-center justify-between text-[11px] font-semibold text-slate-300">
+                  <span>🔄 Transform & Vị trí</span>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      updateCurrentElement(selectedElement.id, {
+                        rotation: 0,
+                        scaleX: 1,
+                        scaleY: 1,
+                      })
+                    }
+                    className="text-[9px] text-slate-400 hover:text-purple-300 underline"
+                  >
+                    Reset 0°/1x
+                  </button>
+                </div>
+
+                {/* X & Y */}
+                <div className="grid grid-cols-2 gap-2">
+                  <label className="block text-[10px] text-slate-400">
+                    X (px)
+                    <input
+                      type="number"
+                      value={selectedElement.x}
+                      onChange={(e) => updateCurrentElement(selectedElement.id, { x: Number(e.target.value) })}
+                      className="mt-0.5 w-full rounded-lg border border-white/10 bg-black/40 px-2 py-1 text-xs text-white outline-none focus:border-purple-500 font-mono"
+                    />
+                  </label>
+                  <label className="block text-[10px] text-slate-400">
+                    Y (px)
+                    <input
+                      type="number"
+                      value={selectedElement.y}
+                      onChange={(e) => updateCurrentElement(selectedElement.id, { y: Number(e.target.value) })}
+                      className="mt-0.5 w-full rounded-lg border border-white/10 bg-black/40 px-2 py-1 text-xs text-white outline-none focus:border-purple-500 font-mono"
+                    />
+                  </label>
+                </div>
+
+                {/* Width & Height */}
+                <div className="grid grid-cols-2 gap-2">
+                  <label className="block text-[10px] text-slate-400">
+                    Width (px)
+                    <input
+                      type="number"
+                      value={selectedElement.width}
+                      onChange={(e) => updateCurrentElement(selectedElement.id, { width: Number(e.target.value) })}
+                      className="mt-0.5 w-full rounded-lg border border-white/10 bg-black/40 px-2 py-1 text-xs text-white outline-none focus:border-purple-500 font-mono"
+                    />
+                  </label>
+                  <label className="block text-[10px] text-slate-400">
+                    Height (px)
+                    <input
+                      type="number"
+                      value={selectedElement.height}
+                      onChange={(e) => updateCurrentElement(selectedElement.id, { height: Number(e.target.value) })}
+                      className="mt-0.5 w-full rounded-lg border border-white/10 bg-black/40 px-2 py-1 text-xs text-white outline-none focus:border-purple-500 font-mono"
+                    />
+                  </label>
+                </div>
+
+                {/* Rotation */}
+                <div className="space-y-1">
+                  <div className="flex items-center justify-between text-[11px] text-slate-400">
+                    <span>Rotation (° Xoay)</span>
+                    <span className="font-mono text-purple-300 font-medium">{Math.round(selectedElement.rotation ?? 0)}°</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="range"
+                      min="-180"
+                      max="180"
+                      step="1"
+                      value={selectedElement.rotation ?? 0}
+                      onChange={(e) => updateCurrentElement(selectedElement.id, { rotation: Number(e.target.value) })}
+                      className="w-full accent-purple-500 cursor-pointer"
+                    />
+                    <input
+                      type="number"
+                      min="-360"
+                      max="360"
+                      value={selectedElement.rotation ?? 0}
+                      onChange={(e) => updateCurrentElement(selectedElement.id, { rotation: Number(e.target.value) })}
+                      className="w-16 rounded border border-white/10 bg-black/40 px-1.5 py-1 text-xs text-right text-white font-mono"
+                    />
+                  </div>
+                </div>
+
+                {/* Scale X & Scale Y */}
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="space-y-1">
+                    <div className="flex justify-between text-[10px] text-slate-400">
+                      <span>Scale X</span>
+                      <span className="font-mono text-purple-300">
+                        {Number((selectedElement.scaleX ?? 1).toFixed(2))}x
+                      </span>
+                    </div>
+                    <input
+                      type="range"
+                      min="0.1"
+                      max="3"
+                      step="0.05"
+                      value={selectedElement.scaleX ?? 1}
+                      onChange={(e) => updateCurrentElement(selectedElement.id, { scaleX: Number(e.target.value) })}
+                      className="w-full accent-purple-500 cursor-pointer"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <div className="flex justify-between text-[10px] text-slate-400">
+                      <span>Scale Y</span>
+                      <span className="font-mono text-purple-300">
+                        {Number((selectedElement.scaleY ?? 1).toFixed(2))}x
+                      </span>
+                    </div>
+                    <input
+                      type="range"
+                      min="0.1"
+                      max="3"
+                      step="0.05"
+                      value={selectedElement.scaleY ?? 1}
+                      onChange={(e) => updateCurrentElement(selectedElement.id, { scaleY: Number(e.target.value) })}
+                      className="w-full accent-purple-500 cursor-pointer"
+                    />
+                  </div>
+                </div>
+
+                {/* Anchor Point X & Y */}
+                <div className="grid grid-cols-2 gap-2 pt-0.5">
+                  <label className="block text-[10px] text-slate-500">
+                    Anchor X (0..1)
+                    <input
+                      type="number"
+                      min="0"
+                      max="1"
+                      step="0.1"
+                      value={selectedElement.anchorX ?? 0.5}
+                      onChange={(e) => updateCurrentElement(selectedElement.id, { anchorX: Number(e.target.value) })}
+                      className="mt-0.5 w-full rounded border border-white/10 bg-black/40 px-2 py-1 text-xs text-white outline-none font-mono"
+                    />
+                  </label>
+                  <label className="block text-[10px] text-slate-500">
+                    Anchor Y (0..1)
+                    <input
+                      type="number"
+                      min="0"
+                      max="1"
+                      step="0.1"
+                      value={selectedElement.anchorY ?? 0.5}
+                      onChange={(e) => updateCurrentElement(selectedElement.id, { anchorY: Number(e.target.value) })}
+                      className="mt-0.5 w-full rounded border border-white/10 bg-black/40 px-2 py-1 text-xs text-white outline-none font-mono"
+                    />
+                  </label>
+                </div>
+              </div>
+
+              {/* Appearance Filters for Element */}
+              <div className="rounded-xl border border-white/5 bg-black/20 p-2.5 space-y-2">
+                <div className="text-[11px] font-semibold text-slate-300">
+                  ✨ Appearance & Hiệu ứng
+                </div>
+
+                {/* Opacity */}
+                <div>
+                  <div className="flex justify-between text-[10px] text-slate-400 mb-0.5">
+                    <span>Opacity (Độ trong suốt)</span>
+                    <span className="font-mono text-purple-300">{Math.round((selectedElement.opacity ?? 1) * 100)}%</span>
+                  </div>
+                  <input
+                    type="range"
+                    min="0"
+                    max="1"
+                    step="0.05"
+                    value={selectedElement.opacity ?? 1}
+                    onChange={(e) => updateCurrentElement(selectedElement.id, { opacity: Number(e.target.value) })}
+                    className="w-full accent-purple-500 cursor-pointer"
+                  />
+                </div>
+
+                {/* Blur */}
+                <div>
+                  <div className="flex justify-between text-[10px] text-slate-400 mb-0.5">
+                    <span>Blur (Độ mờ)</span>
+                    <span className="font-mono text-purple-300">{selectedElement.blur ?? 0}px</span>
+                  </div>
+                  <input
+                    type="range"
+                    min="0"
+                    max="20"
+                    step="0.5"
+                    value={selectedElement.blur ?? 0}
+                    onChange={(e) => updateCurrentElement(selectedElement.id, { blur: Number(e.target.value) })}
+                    className="w-full accent-purple-500 cursor-pointer"
+                  />
+                </div>
+
+                {/* Brightness, Contrast, Saturation */}
+                <div className="grid grid-cols-3 gap-1.5 pt-0.5">
+                  <label className="block text-[9px] text-slate-400">
+                    Brightness
+                    <input
+                      type="number"
+                      min="20"
+                      max="200"
+                      step="5"
+                      value={selectedElement.brightness ?? 100}
+                      onChange={(e) => updateCurrentElement(selectedElement.id, { brightness: Number(e.target.value) })}
+                      className="mt-0.5 w-full rounded border border-white/10 bg-black/40 px-1 py-1 text-xs text-white outline-none font-mono"
+                    />
+                  </label>
+                  <label className="block text-[9px] text-slate-400">
+                    Contrast
+                    <input
+                      type="number"
+                      min="20"
+                      max="200"
+                      step="5"
+                      value={selectedElement.contrast ?? 100}
+                      onChange={(e) => updateCurrentElement(selectedElement.id, { contrast: Number(e.target.value) })}
+                      className="mt-0.5 w-full rounded border border-white/10 bg-black/40 px-1 py-1 text-xs text-white outline-none font-mono"
+                    />
+                  </label>
+                  <label className="block text-[9px] text-slate-400">
+                    Saturate
+                    <input
+                      type="number"
+                      min="0"
+                      max="200"
+                      step="5"
+                      value={selectedElement.saturation ?? 100}
+                      onChange={(e) => updateCurrentElement(selectedElement.id, { saturation: Number(e.target.value) })}
+                      className="mt-0.5 w-full rounded border border-white/10 bg-black/40 px-1 py-1 text-xs text-white outline-none font-mono"
+                    />
+                  </label>
+                </div>
+              </div>
             </div>
           ) : (
             <div className="rounded-2xl border border-white/10 bg-[#0e0a1e]/80 p-6 text-center text-xs text-slate-400">
@@ -2687,6 +3900,257 @@ export function AnimationTimeline() {
                   <span>{copiedJson ? "Đã sao chép!" : "Sao chép JSON"}</span>
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* New Project Confirmation Modal */}
+      {showNewConfirmModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-md animate-in fade-in duration-150">
+          <div className="w-full max-w-sm rounded-2xl border border-white/15 bg-[#120d24] p-5 shadow-2xl space-y-4">
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-purple-600/30 border border-purple-500/40 text-purple-300">
+                <FilePlus className="h-5 w-5" />
+              </div>
+              <div>
+                <h3 className="text-sm font-bold text-white">Tạo Project Mới?</h3>
+                <p className="text-[11px] text-slate-400">Khởi tạo lại toàn bộ timeline & canvas</p>
+              </div>
+            </div>
+
+            <p className="text-xs text-slate-300 leading-relaxed">
+              Toàn bộ layer và keyframe chưa lưu sẽ bị làm mới về mẫu chuẩn. Bạn có thể nhấn <strong>Xuất .istudio</strong> trước để lưu lại dự án hiện tại.
+            </p>
+
+            <div className="flex items-center justify-end gap-2 pt-2 border-t border-white/10">
+              <button
+                type="button"
+                onClick={() => setShowNewConfirmModal(false)}
+                className="rounded-xl px-3 py-1.5 text-xs font-semibold text-slate-400 hover:bg-white/10 hover:text-white transition"
+              >
+                Hủy
+              </button>
+              <button
+                type="button"
+                onClick={confirmNewProject}
+                className="rounded-xl bg-purple-600 hover:bg-purple-500 px-4 py-1.5 text-xs font-bold text-white shadow-lg shadow-purple-600/30 transition"
+              >
+                Tạo mới ngay
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Save As Modal */}
+      {showSaveAsModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-md animate-in fade-in duration-150">
+          <div className="w-full max-w-md rounded-2xl border border-white/15 bg-[#120d24] p-5 shadow-2xl space-y-4">
+            <div className="flex items-center justify-between border-b border-white/10 pb-3">
+              <div className="flex items-center gap-2.5">
+                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-cyan-600/20 border border-cyan-500/30 text-cyan-400">
+                  <Copy className="h-4 w-4" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-white">Lưu Dự Án Mới (Save As)</h3>
+                  <p className="text-[11px] text-slate-400">Lưu thành tệp dự án .istudio độc lập</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowSaveAsModal(false)}
+                className="rounded-lg p-1 text-slate-400 hover:bg-white/10 hover:text-white transition"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            <div className="space-y-3">
+              <div>
+                <label className="block text-xs font-medium text-slate-300 mb-1">
+                  Tên tệp dự án
+                </label>
+                <div className="flex items-center rounded-xl border border-white/15 bg-black/50 px-3 py-2 text-xs text-white focus-within:border-cyan-400">
+                  <input
+                    type="text"
+                    value={saveAsFilename}
+                    onChange={(e) => setSaveAsFilename(e.target.value)}
+                    placeholder="my-animation"
+                    className="w-full bg-transparent outline-none text-white font-medium"
+                    autoFocus
+                  />
+                  <span className="font-mono text-cyan-400 text-xs font-bold pl-1">.istudio</span>
+                </div>
+              </div>
+
+              {/* Package summary */}
+              <div className="rounded-xl border border-white/10 bg-white/[0.03] p-3 text-xs space-y-2">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">
+                  Thông tin gói dự án (.istudio v1)
+                </span>
+                <div className="grid grid-cols-2 gap-2 text-[11px]">
+                  <div className="text-slate-400">
+                    Kích thước: <span className="font-mono text-white">{canvas.width} × {canvas.height}px</span>
+                  </div>
+                  <div className="text-slate-400">
+                    Số Layers: <span className="font-mono text-white">{canvas.elements.length}</span>
+                  </div>
+                  <div className="text-slate-400">
+                    Thời lượng: <span className="font-mono text-white">{duration}ms ({fps}fps)</span>
+                  </div>
+                  <div className="text-slate-400">
+                    Biến mẫu: <span className="font-mono text-white">{Object.keys(variables).length} biến</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-2 pt-2 border-t border-white/10">
+              <button
+                type="button"
+                onClick={() => setShowSaveAsModal(false)}
+                className="rounded-xl px-3 py-1.5 text-xs font-semibold text-slate-400 hover:bg-white/10 hover:text-white transition"
+              >
+                Hủy
+              </button>
+              <button
+                type="button"
+                onClick={() => handleSaveAsWithCustomName(saveAsFilename)}
+                className="flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 px-4 py-2 text-xs font-bold text-white shadow-lg shadow-cyan-900/30 transition"
+              >
+                <FileDown className="h-3.5 w-3.5" />
+                <span>Lưu & Tải .istudio</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Import Modal */}
+      {showImportModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-md animate-in fade-in duration-150">
+          <div className="w-full max-w-lg rounded-2xl border border-white/15 bg-[#120d24] p-5 shadow-2xl space-y-4">
+            <div className="flex items-center justify-between border-b border-white/10 pb-3">
+              <div className="flex items-center gap-2.5">
+                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-sky-600/20 border border-sky-500/30 text-sky-400">
+                  <Upload className="h-4 w-4" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-white">Nhập Project (.istudio / JSON)</h3>
+                  <p className="text-[11px] text-slate-400">Mở lại tệp hoặc chuyển giao từ máy khác</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowImportModal(false)}
+                className="rounded-lg p-1 text-slate-400 hover:bg-white/10 hover:text-white transition"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            {/* Mode Tabs */}
+            <div className="flex items-center rounded-xl bg-black/40 border border-white/10 p-0.5">
+              <button
+                type="button"
+                onClick={() => setImportTab("file")}
+                className={`flex-1 py-1.5 rounded-lg text-xs font-semibold transition ${
+                  importTab === "file"
+                    ? "bg-purple-600 text-white shadow-sm"
+                    : "text-slate-400 hover:text-white"
+                }`}
+              >
+                Từ Tệp Tin (.istudio / .json)
+              </button>
+              <button
+                type="button"
+                onClick={() => setImportTab("text")}
+                className={`flex-1 py-1.5 rounded-lg text-xs font-semibold transition ${
+                  importTab === "text"
+                    ? "bg-purple-600 text-white shadow-sm"
+                    : "text-slate-400 hover:text-white"
+                }`}
+              >
+                Dán Mã JSON Dự Án
+              </button>
+            </div>
+
+            {importError && (
+              <div className="rounded-xl border border-red-500/30 bg-red-950/60 p-3 text-xs text-red-200">
+                {importError}
+              </div>
+            )}
+
+            {importTab === "file" ? (
+              <div className="space-y-3">
+                <div
+                  onClick={() => fileInputRef.current?.click()}
+                  onDragOver={(e) => {
+                    e.preventDefault();
+                    e.dataTransfer.dropEffect = "copy";
+                  }}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    const file = e.dataTransfer.files?.[0];
+                    if (file) {
+                      handleOpenIStudioFile(file);
+                      setShowImportModal(false);
+                    }
+                  }}
+                  className="flex flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-white/20 bg-white/[0.02] p-8 text-center cursor-pointer hover:border-purple-400 hover:bg-purple-950/20 transition group"
+                >
+                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-purple-600/20 text-purple-300 group-hover:scale-110 transition">
+                    <FolderOpen className="h-6 w-6" />
+                  </div>
+                  <div>
+                    <div className="text-xs font-bold text-white">
+                      Bấm để chọn tệp .istudio hoặc .json
+                    </div>
+                    <div className="text-[11px] text-slate-400 mt-0.5">
+                      Hoặc kéo và thả tệp trực tiếp vào đây
+                    </div>
+                  </div>
+                  <span className="rounded-full bg-purple-500/20 px-2.5 py-0.5 text-[10px] font-mono text-purple-300 border border-purple-500/30 mt-1">
+                    Định dạng hỗ trợ: *.istudio, *.json
+                  </span>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                <label className="block text-xs font-medium text-slate-300">
+                  Dán nội dung JSON của file .istudio
+                </label>
+                <textarea
+                  value={importJsonText}
+                  onChange={(e) => {
+                    setImportJsonText(e.target.value);
+                    setImportError(null);
+                  }}
+                  placeholder={'{\n  "version": 1,\n  "canvas": { ... },\n  "elements": [ ... ],\n  "tracks": [ ... ]\n}'}
+                  rows={8}
+                  className="w-full rounded-xl border border-white/10 bg-black/60 p-3 font-mono text-xs text-slate-200 outline-none focus:border-purple-500 resize-none"
+                />
+              </div>
+            )}
+
+            <div className="flex items-center justify-end gap-2 pt-2 border-t border-white/10">
+              <button
+                type="button"
+                onClick={() => setShowImportModal(false)}
+                className="rounded-xl px-3 py-1.5 text-xs font-semibold text-slate-400 hover:bg-white/10 hover:text-white transition"
+              >
+                Hủy
+              </button>
+              {importTab === "text" && (
+                <button
+                  type="button"
+                  onClick={() => handleImportFromJsonText(importJsonText)}
+                  disabled={!importJsonText.trim()}
+                  className="flex items-center gap-1.5 rounded-xl bg-purple-600 hover:bg-purple-500 px-4 py-2 text-xs font-bold text-white shadow-lg shadow-purple-600/30 disabled:opacity-50 transition"
+                >
+                  <Upload className="h-3.5 w-3.5" />
+                  <span>Nhập Dự Án</span>
+                </button>
+              )}
             </div>
           </div>
         </div>

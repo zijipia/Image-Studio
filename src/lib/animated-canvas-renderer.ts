@@ -74,17 +74,32 @@ async function animatedImageToDataUri(url: string, timeMs: number, targetWidth: 
 async function renderElement(element: CustomElement): Promise<any> {
   const textShadow = computeElementTextShadow(element);
 
+  const x = element.transform?.x ?? element.x;
+  const y = element.transform?.y ?? element.y;
+  const width = element.transform?.width ?? element.width;
+  const height = element.transform?.height ?? element.height;
+  const rotation = element.transform?.rotation ?? element.rotation ?? 0;
+  const scaleX = element.transform?.scaleX ?? element.scaleX ?? 1;
+  const scaleY = element.transform?.scaleY ?? element.scaleY ?? 1;
+  const anchorX = element.transform?.anchorX ?? element.anchorX ?? 0.5;
+  const anchorY = element.transform?.anchorY ?? element.anchorY ?? 0.5;
+
   const base: any = {
     position: "absolute",
-    left: px(element.x),
-    top: px(element.y),
-    width: px(element.width),
-    height: px(element.height),
+    left: px(x),
+    top: px(y),
+    width: px(width),
+    height: px(height),
     opacity: element.opacity ?? 1,
     zIndex: element.zIndex ?? 0,
     boxSizing: "border-box",
     overflow: element.type === "text" ? "visible" : "hidden",
   };
+
+  if (rotation !== 0 || scaleX !== 1 || scaleY !== 1) {
+    base.transform = `rotate(${rotation}deg) scale(${scaleX}, ${scaleY})`;
+    base.transformOrigin = `${anchorX * 100}% ${anchorY * 100}%`;
+  }
 
   if (element.type === "text" || element.type === "badge") {
     const style: Record<string, unknown> = {
@@ -96,9 +111,12 @@ async function renderElement(element: CustomElement): Promise<any> {
       borderRadius: px(element.borderRadius),
       fontSize: px(element.fontSize, 24),
       fontWeight: element.fontWeight ?? 400,
-      lineHeight: 1.2,
+      lineHeight: element.lineHeight ?? 1.2,
       whiteSpace: "pre-wrap",
     };
+    if (element.letterSpacing !== undefined && element.letterSpacing !== 0) {
+      style.letterSpacing = px(element.letterSpacing);
+    }
     if (textShadow) {
       style.textShadow = textShadow;
     }
@@ -113,10 +131,10 @@ async function renderElement(element: CustomElement): Promise<any> {
   }
 
   if (element.type === "image" || element.type === "avatar") {
-    const src = await imageToDataUri(element.imageUrl ?? "", Math.max(32, Math.round(Math.max(element.width, element.height))));
+    const src = await imageToDataUri(element.imageUrl ?? "", Math.max(32, Math.round(Math.max(width, height))));
     const style: Record<string, unknown> = { ...base, objectFit: "cover", borderRadius: px(element.borderRadius) };
     if (element.border) style.border = element.border;
-    return { type: "img", props: { src, width: element.width, height: element.height, style } };
+    return { type: "img", props: { src, width, height, style } };
   }
 
   if (element.type === "progress") {
