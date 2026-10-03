@@ -2,12 +2,42 @@ export type GeneratorType = "song" | "profile" | "leaderboard" | "quote" | "anim
 
 export interface SongResult { index: number; avatar: string; displayName: string; time: string; source: string; author?: string; views?: string; }
 export interface SongGenerateRequest { type?: "song"; title: string; items: SongResult[]; layout?: "auto" | "list" | "grid" | "classic"; }
-export interface ProfileData { username: string; balance: string; avatar: string; level: number; currentXp: number; requiredXp: number; rank: string; theme?: "ruby-poly" | "purple-glow" | "midnight-blue" | "dark-slate"; }
+
+export type ProfileTheme = "ruby-poly" | "cyber-neon" | "glass-minimal" | "gold-legend";
+export interface ProfileData {
+  username: string;
+  balance: string;
+  avatar: string;
+  level: number;
+  currentXp: number;
+  requiredXp: number;
+  rank: string;
+  theme?: ProfileTheme;
+  badge?: string;
+  title?: string;
+}
 export interface ProfileGenerateRequest { type: "profile"; data: ProfileData; }
+
+export type LeaderboardLayout = "podium" | "compact-list" | "cyber-grid";
 export interface LeaderboardItem { rank: number; username: string; handle: string; avatar: string; level: number; xp: number; }
-export interface LeaderboardData { guildIcon: string; guildName?: string; items: LeaderboardItem[]; }
+export interface LeaderboardData {
+  guildIcon: string;
+  guildName?: string;
+  season?: string;
+  items: LeaderboardItem[];
+  layout?: LeaderboardLayout;
+}
 export interface LeaderboardGenerateRequest { type: "leaderboard"; data: LeaderboardData; }
-export interface QuoteData { quote: string; author: string; handle: string; tag: string; avatar: string; }
+
+export type QuoteLayout = "split-portrait" | "centered-minimal" | "modern-card" | "neon-cyber";
+export interface QuoteData {
+  quote: string;
+  author: string;
+  handle: string;
+  tag: string;
+  avatar: string;
+  layout?: QuoteLayout;
+}
 export interface QuoteGenerateRequest { type: "quote"; data: QuoteData; }
 
 export type CustomElementType = "text" | "image" | "avatar" | "badge" | "progress" | "box";

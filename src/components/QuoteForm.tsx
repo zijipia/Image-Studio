@@ -82,6 +82,41 @@ export function QuoteForm({
 
       {tab === "visual" ? (
         <div className="space-y-3.5">
+          {/* Layout Selector */}
+          <div>
+            <label className="text-xs font-semibold text-indigo-300">Bố Cục / Layout Trích Dẫn</label>
+            <div className="mt-1.5 grid grid-cols-2 gap-2 sm:grid-cols-4">
+              {[
+                { id: "split-portrait", name: "Split Cinema", icon: "🎬", desc: "Tràn viền trái fade đen" },
+                { id: "centered-minimal", name: "Centered Editorial", icon: "🖋️", desc: "Căn giữa trang trọng" },
+                { id: "modern-card", name: "Modern Card", icon: "✨", desc: "Thẻ kính mờ nổi" },
+                { id: "neon-cyber", name: "Neon Cyber", icon: "⚡", desc: "Terminal công nghệ HUD" },
+              ].map((l) => {
+                const isSelected = (data.layout || "split-portrait") === l.id;
+                return (
+                  <button
+                    key={l.id}
+                    type="button"
+                    onClick={() => {
+                      const next = { ...data, layout: l.id as any };
+                      onChange(next);
+                      syncJson(next);
+                    }}
+                    className={`flex flex-col items-center justify-center rounded-xl border p-2 text-center transition-all ${
+                      isSelected
+                        ? "border-indigo-400 bg-indigo-950/70 shadow-md ring-2 ring-indigo-400/50"
+                        : "border-white/10 bg-black/40 hover:border-white/20 hover:bg-white/5"
+                    }`}
+                  >
+                    <span className="text-base">{l.icon}</span>
+                    <span className="text-xs font-bold text-white mt-0.5">{l.name}</span>
+                    <span className="text-[10px] text-slate-400 mt-0.5 leading-tight">{l.desc}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
           <div>
             <label className="text-xs font-semibold text-indigo-300">Quote Speech Text</label>
             <textarea

@@ -82,6 +82,40 @@ export function ProfileForm({
 
       {tab === "visual" ? (
         <div className="space-y-3.5">
+          {/* Theme Selector */}
+          <div>
+            <label className="text-xs font-semibold text-rose-300">Giao Diện / Style Mẫu</label>
+            <div className="mt-1.5 grid grid-cols-2 gap-2 sm:grid-cols-4">
+              {[
+                { id: "ruby-poly", name: "Ruby Poly", color: "from-rose-600 to-pink-700" },
+                { id: "cyber-neon", name: "Cyber Neon", color: "from-cyan-500 to-purple-600" },
+                { id: "glass-minimal", name: "Glass Emerald", color: "from-emerald-500 to-teal-700" },
+                { id: "gold-legend", name: "Gold Legend", color: "from-amber-500 to-yellow-600" },
+              ].map((t) => {
+                const isSelected = (data.theme || "ruby-poly") === t.id;
+                return (
+                  <button
+                    key={t.id}
+                    type="button"
+                    onClick={() => {
+                      const next = { ...data, theme: t.id as any };
+                      onChange(next);
+                      syncJson(next);
+                    }}
+                    className={`flex flex-col items-center justify-center rounded-xl border p-2 text-center transition-all ${
+                      isSelected
+                        ? "border-rose-400 bg-rose-950/50 shadow-md ring-2 ring-rose-400/50"
+                        : "border-white/10 bg-black/40 hover:border-white/20 hover:bg-white/5"
+                    }`}
+                  >
+                    <div className={`h-2.5 w-full rounded-full bg-gradient-to-r ${t.color} mb-1.5`} />
+                    <span className="text-[11px] font-semibold text-white">{t.name}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
           <div>
             <label className="text-xs font-semibold text-rose-300">Username</label>
             <input
@@ -95,6 +129,37 @@ export function ProfileForm({
               placeholder="__ziji"
               className="mt-1 w-full rounded-xl border border-white/10 bg-black/40 px-3.5 py-2.5 text-xs text-white focus:border-rose-500 focus:outline-none"
             />
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="text-xs font-semibold text-rose-300">Role Badge (Huy hiệu)</label>
+              <input
+                type="text"
+                value={data.badge || ""}
+                onChange={(e) => {
+                  const next = { ...data, badge: e.target.value };
+                  onChange(next);
+                  syncJson(next);
+                }}
+                placeholder="e.g. ★ TOP 1 GUILD"
+                className="mt-1 w-full rounded-xl border border-white/10 bg-black/40 px-3.5 py-2.5 text-xs text-white focus:border-rose-500 focus:outline-none"
+              />
+            </div>
+            <div>
+              <label className="text-xs font-semibold text-rose-300">Title / Subtitle</label>
+              <input
+                type="text"
+                value={data.title || ""}
+                onChange={(e) => {
+                  const next = { ...data, title: e.target.value };
+                  onChange(next);
+                  syncJson(next);
+                }}
+                placeholder="e.g. Ruby Grandmaster"
+                className="mt-1 w-full rounded-xl border border-white/10 bg-black/40 px-3.5 py-2.5 text-xs text-white focus:border-rose-500 focus:outline-none"
+              />
+            </div>
           </div>
 
           <div className="grid grid-cols-2 gap-3">

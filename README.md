@@ -23,9 +23,10 @@ Image Studio provides a full-featured visual creation suite optimized for Discor
 ### 4. 💬 Quote Card
 - Elegant typographic card generator with custom avatar, handle, and message quotation.
 
-### 5. 🎨 Custom Studio
-- Visual drag-and-drop designer for arbitrary custom banners.
-- Support for Text, Images, Avatars, Badges, Progress Bars, and Glassmorphic Containers.
+### 5. 🎨 Presets & Template Manager (Local Storage)
+- **Built-in Curated Templates**: Instantly switch between curated configurations for Song Search, Profile Cards, Guild Leaderboards, and Quotes.
+- **Save to Local Storage**: Save custom configurations with custom names and notes directly to your browser's persistent storage.
+- **1-Click Apply & Management**: Load saved presets with a single click, view badge summaries, and remove outdated presets easily.
 
 ### 6. 🎬 Animation Studio (GIF & WebP)
 - **Interactive Multi-Track Timeline**:

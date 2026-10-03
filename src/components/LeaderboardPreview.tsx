@@ -22,7 +22,8 @@ export function LeaderboardPreview({
   const [previewPngUrl, setPreviewPngUrl] = useState<string | null>(null);
 
   const items = data.items || [];
-  const height = calculateLeaderboardHeight(items.length);
+  const layout = data.layout || "podium";
+  const height = calculateLeaderboardHeight(items.length, layout);
 
   useEffect(() => {
     if (lastGeneratedBlob) {
@@ -166,12 +167,121 @@ export function LeaderboardPreview({
               </div>
 
               <div className="rounded-full border border-amber-500/35 bg-amber-500/15 px-3 py-1 text-[11px] font-bold tracking-wider text-amber-300">
-                SEASON 1
+                {data.season || "SEASON 1"}
               </div>
             </div>
 
-            {/* 2. Top 3 Podium */}
-            <div className="mb-[16px] flex w-full items-end justify-center gap-2">
+            {/* Layout Branching: compact-list, cyber-grid, or podium */}
+            {layout === "compact-list" ? (
+              <div className="flex w-full flex-col gap-2">
+                {items.map((item) => {
+                  const medal =
+                    item.rank === 1 ? "🥇" : item.rank === 2 ? "🥈" : item.rank === 3 ? "🥉" : null;
+                  const rankColor =
+                    item.rank === 1 ? "#f59e0b" : item.rank === 2 ? "#38bdf8" : item.rank === 3 ? "#f97316" : "#64748b";
+                  return (
+                    <div
+                      key={item.rank}
+                      className="flex h-[64px] w-full items-center rounded-[12px] border border-white/6 bg-white/[0.04] px-4 transition-all hover:bg-white/[0.07]"
+                    >
+                      <div className="mr-3 flex w-[32px] items-center justify-center font-bold text-[16px]">
+                        {medal ? (
+                          <span className="text-[20px]">{medal}</span>
+                        ) : (
+                          <span className="font-mono text-[14px] font-bold text-slate-400">
+                            #{item.rank}
+                          </span>
+                        )}
+                      </div>
+
+                      <img
+                        src={item.avatar}
+                        alt={item.username}
+                        className="mr-3.5 h-[44px] w-[44px] rounded-full border-2 object-cover bg-black/40"
+                        style={{ borderColor: rankColor }}
+                        crossOrigin="anonymous"
+                      />
+
+                      <div className="min-w-0 flex-1">
+                        <div className="truncate text-[15px] font-semibold text-white">
+                          {item.username}
+                        </div>
+                        <div className="text-[12px] text-slate-400">{item.handle}</div>
+                      </div>
+
+                      <div className="flex flex-col items-end">
+                        <div
+                          className="rounded-full px-2.5 py-0.5 text-[11px] font-bold"
+                          style={{
+                            backgroundColor: `${rankColor}22`,
+                            color: rankColor,
+                            border: `1px solid ${rankColor}44`,
+                          }}
+                        >
+                          Level {item.level}
+                        </div>
+                        <div className="mt-1 font-mono text-[12px] font-semibold text-slate-300">
+                          {item.xp.toLocaleString()} XP
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : layout === "cyber-grid" ? (
+              <div className="grid grid-cols-2 gap-2.5 w-full">
+                {items.map((item) => {
+                  const rankColor =
+                    item.rank === 1 ? "#38bdf8" : item.rank === 2 ? "#c084fc" : item.rank === 3 ? "#f59e0b" : "#475569";
+                  return (
+                    <div
+                      key={item.rank}
+                      className="relative flex h-[82px] items-center rounded-[14px] border p-2.5 bg-black/50 transition-all overflow-hidden"
+                      style={{
+                        borderColor: `${rankColor}55`,
+                        boxShadow: `0 0 15px ${rankColor}12`,
+                      }}
+                    >
+                      <div className="relative mr-2.5 shrink-0">
+                        <img
+                          src={item.avatar}
+                          alt={item.username}
+                          className="h-[48px] w-[48px] rounded-xl object-cover border-2"
+                          style={{ borderColor: rankColor }}
+                          crossOrigin="anonymous"
+                        />
+                        <span
+                          className="absolute -top-1.5 -left-1.5 flex h-5 w-5 items-center justify-center rounded-full text-[10px] font-bold text-black shadow"
+                          style={{ backgroundColor: rankColor }}
+                        >
+                          {item.rank}
+                        </span>
+                      </div>
+
+                      <div className="min-w-0 flex-1">
+                        <div className="truncate text-[13px] font-bold text-white">
+                          {item.username}
+                        </div>
+                        <div className="truncate text-[10px] text-slate-400">
+                          {item.handle}
+                        </div>
+                        <div className="mt-1 flex items-center justify-between text-[11px]">
+                          <span className="font-bold" style={{ color: rankColor }}>
+                            Lv.{item.level}
+                          </span>
+                          <span className="font-mono text-slate-300 text-[10px]">
+                            {item.xp} XP
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <>
+                {/* 2. Top 3 Podium */}
+                <div className="mb-[16px] flex w-full items-end justify-center gap-2">
               {/* Rank 2 (Left) */}
               <div className="relative flex h-[232px] flex-1 flex-col items-center justify-end">
                 {/* Pedestal Box */}
@@ -306,6 +416,8 @@ export function LeaderboardPreview({
                 </div>
               ))}
             </div>
+          </>
+        )}
           </div>
         </div>
       </div>

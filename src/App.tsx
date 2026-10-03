@@ -23,6 +23,7 @@ import { LeaderboardPreview } from "./components/LeaderboardPreview";
 import { QuoteForm } from "./components/QuoteForm";
 import { QuotePreview } from "./components/QuotePreview";
 import { AnimationTimeline } from "./components/AnimationTimeline";
+import { SidebarPresets } from "./components/SidebarPresets";
 import {
   Music,
   User,
@@ -423,7 +424,35 @@ export default function App() {
           {/* Mode 1-4: Dual Panel Grid (Song, Profile, Leaderboard, Quote) */}
           {activeMode !== "animated" && (
             <div className="grid grid-cols-1 gap-8 lg:grid-cols-[480px_1fr] xl:grid-cols-[540px_1fr]">
-              <div className="rounded-2xl border border-white/10 bg-[#0e0a1e]/80 p-5 shadow-xl backdrop-blur-md">
+              <div className="rounded-2xl border border-white/10 bg-[#0e0a1e]/80 p-5 shadow-xl backdrop-blur-md space-y-5">
+                {/* Presets & Templates Section in Sidebar */}
+                <SidebarPresets
+                  generatorType={activeMode as "song" | "profile" | "leaderboard" | "quote"}
+                  currentData={
+                    activeMode === "song"
+                      ? { title: songTitle, songs, layout: songLayout }
+                      : activeMode === "profile"
+                      ? profileData
+                      : activeMode === "leaderboard"
+                      ? leaderboardData
+                      : quoteData
+                  }
+                  onLoadPreset={(presetData, presetName) => {
+                    if (activeMode === "song") {
+                      if (presetData.title) setSongTitle(presetData.title);
+                      if (presetData.songs) setSongs(presetData.songs);
+                      if (presetData.layout) setSongLayout(presetData.layout);
+                    } else if (activeMode === "profile") {
+                      setProfileData(presetData);
+                    } else if (activeMode === "leaderboard") {
+                      setLeaderboardData(presetData);
+                    } else if (activeMode === "quote") {
+                      setQuoteData(presetData);
+                    }
+                    showToast(`Loaded preset: ${presetName}`);
+                  }}
+                />
+
                 {activeMode === "song" && (
                   <GeneratorForm
                     title={songTitle}

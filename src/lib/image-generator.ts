@@ -696,6 +696,10 @@ export async function generateSongImage(request: {
 export async function generateProfileImage(data: ProfileData): Promise<{ png: Buffer; height: number }> {
   const avatarUri = await imageToDataUri(data.avatar, 180);
   const percent = Math.min(100, Math.max(0, Math.round((data.currentXp / (data.requiredXp || 1)) * 100)));
+  const theme = data.theme || "ruby-poly";
+
+  // Selected theme layout
+  let element: any;
 
   const element = {
     type: "div",
@@ -707,8 +711,8 @@ export async function generateProfileImage(data: ProfileData): Promise<{ png: Bu
         alignItems: "center",
         padding: "0 35px",
         borderRadius: "20px",
-        background:
-          "linear-gradient(135deg, #090210 0%, #1a031e 30%, #3d0728 65%, #630c33 100%)",
+        background: themeStyles.cardBg,
+        border: themeStyles.border,
         position: "relative",
         overflow: "hidden",
       },
@@ -724,7 +728,7 @@ export async function generateProfileImage(data: ProfileData): Promise<{ png: Bu
               height: "450px",
               borderRadius: "40px",
               transform: "rotate(45deg)",
-              background: "linear-gradient(45deg, rgba(225, 29, 72, 0.25), rgba(159, 18, 57, 0.05))",
+              background: themeStyles.shape1,
             },
           },
         },
@@ -739,7 +743,7 @@ export async function generateProfileImage(data: ProfileData): Promise<{ png: Bu
               height: "350px",
               borderRadius: "30px",
               transform: "rotate(25deg)",
-              background: "linear-gradient(135deg, rgba(136, 19, 55, 0.3), transparent)",
+              background: themeStyles.shape2,
             },
           },
         },
@@ -749,9 +753,9 @@ export async function generateProfileImage(data: ProfileData): Promise<{ png: Bu
             style: {
               width: "150px",
               height: "150px",
-              borderRadius: "999px",
+              borderRadius: themeStyles.avatarRadius,
               padding: "4px",
-              background: "linear-gradient(135deg, rgba(244, 63, 94, 0.6), rgba(255, 255, 255, 0.2))",
+              background: themeStyles.avatarBorder,
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
@@ -768,7 +772,7 @@ export async function generateProfileImage(data: ProfileData): Promise<{ png: Bu
                   style: {
                     width: "142px",
                     height: "142px",
-                    borderRadius: "999px",
+                    borderRadius: themeStyles.avatarRadius,
                     objectFit: "cover",
                   },
                 },
@@ -793,31 +797,92 @@ export async function generateProfileImage(data: ProfileData): Promise<{ png: Bu
                 props: {
                   style: {
                     display: "flex",
-                    flexDirection: "column",
+                    alignItems: "center",
+                    justifyContent: "space-between",
                   },
                   children: [
                     {
                       type: "div",
                       props: {
                         style: {
-                          fontSize: "34px",
-                          fontWeight: 500,
-                          color: "#f43f5e",
-                          lineHeight: "40px",
+                          display: "flex",
+                          flexDirection: "column",
                         },
-                        children: data.username || "__ziji",
+                        children: [
+                          {
+                            type: "div",
+                            props: {
+                              style: {
+                                display: "flex",
+                                alignItems: "center",
+                                gap: "10px",
+                              },
+                              children: [
+                                {
+                                  type: "div",
+                                  props: {
+                                    style: {
+                                      fontSize: "34px",
+                                      fontWeight: 700,
+                                      color: themeStyles.primaryText,
+                                      lineHeight: "40px",
+                                    },
+                                    children: data.username || "__ziji",
+                                  },
+                                },
+                                ...(data.badge
+                                  ? [
+                                      {
+                                        type: "div",
+                                        props: {
+                                          style: {
+                                            padding: "3px 10px",
+                                            borderRadius: "999px",
+                                            background: themeStyles.badgeBg,
+                                            border: themeStyles.badgeBorder,
+                                            color: themeStyles.badgeColor,
+                                            fontSize: "11px",
+                                            fontWeight: 700,
+                                            letterSpacing: "0.5px",
+                                            display: "flex",
+                                          },
+                                          children: data.badge,
+                                        },
+                                      },
+                                    ]
+                                  : []),
+                              ],
+                            },
+                          },
+                          {
+                            type: "div",
+                            props: {
+                              style: {
+                                fontSize: "19px",
+                                color: themeStyles.secondaryText,
+                                marginTop: "2px",
+                                lineHeight: "25px",
+                              },
+                              children: `${data.title ? `${data.title} · ` : ""}${data.balance || "0 xu"}`,
+                            },
+                          },
+                        ],
                       },
                     },
                     {
                       type: "div",
                       props: {
                         style: {
-                          fontSize: "20px",
-                          color: "#a1a1aa",
-                          marginTop: "2px",
-                          lineHeight: "26px",
+                          padding: "5px 12px",
+                          borderRadius: "10px",
+                          background: themeStyles.badgeBg,
+                          border: themeStyles.badgeBorder,
+                          color: themeStyles.primaryText,
+                          fontSize: "15px",
+                          fontWeight: 700,
+                          display: "flex",
                         },
-                        children: data.balance || "0 xu",
+                        children: data.rank ?? "#1",
                       },
                     },
                   ],
@@ -830,7 +895,7 @@ export async function generateProfileImage(data: ProfileData): Promise<{ png: Bu
                     width: "660px",
                     height: "26px",
                     borderRadius: "999px",
-                    background: "#3e4147",
+                    background: themeStyles.progressBg,
                     marginTop: "16px",
                     overflow: "hidden",
                     display: "flex",
@@ -844,7 +909,7 @@ export async function generateProfileImage(data: ProfileData): Promise<{ png: Bu
                           width: `${Math.max(2, percent)}%`,
                           height: "100%",
                           borderRadius: "999px",
-                          background: "linear-gradient(90deg, #f43f5e, #fb7185)",
+                          background: themeStyles.progressFill,
                         },
                       },
                     },
@@ -866,8 +931,8 @@ export async function generateProfileImage(data: ProfileData): Promise<{ png: Bu
                       props: {
                         style: {
                           fontSize: "20px",
-                          fontWeight: 500,
-                          color: "#f43f5e",
+                          fontWeight: 600,
+                          color: themeStyles.statsColor,
                           letterSpacing: "1px",
                         },
                         children: `LEVEL: ${data.level ?? 1}`,
@@ -878,11 +943,11 @@ export async function generateProfileImage(data: ProfileData): Promise<{ png: Bu
                       props: {
                         style: {
                           fontSize: "20px",
-                          fontWeight: 500,
-                          color: "#f43f5e",
+                          fontWeight: 600,
+                          color: themeStyles.statsColor,
                           letterSpacing: "1px",
                         },
-                        children: `XP: ${data.currentXp ?? 0}/${data.requiredXp ?? 100}`,
+                        children: `XP: ${data.currentXp ?? 0}/${data.requiredXp ?? 100} (${percent}%)`,
                       },
                     },
                     {
@@ -890,8 +955,8 @@ export async function generateProfileImage(data: ProfileData): Promise<{ png: Bu
                       props: {
                         style: {
                           fontSize: "20px",
-                          fontWeight: 500,
-                          color: "#f43f5e",
+                          fontWeight: 600,
+                          color: themeStyles.statsColor,
                           letterSpacing: "1px",
                         },
                         children: `RANK: ${data.rank ?? "#1"}`,
@@ -925,126 +990,77 @@ export async function generateProfileImage(data: ProfileData): Promise<{ png: Bu
 
 export async function generateLeaderboardImage(data: LeaderboardData): Promise<{ png: Buffer; height: number }> {
   const items = data.items || [];
-  const height = calculateLeaderboardHeight(items.length);
+  const layout = data.layout || "podium";
+  const height = calculateLeaderboardHeight(items.length, layout);
 
   const top1 = items.find((i) => i.rank === 1) || items[0];
   const top2 = items.find((i) => i.rank === 2) || items[1];
   const top3 = items.find((i) => i.rank === 3) || items[2];
   const rest = items.filter((i) => i.rank > 3);
 
-  const [guildIconUri, top1Uri, top2Uri, top3Uri, ...restUris] = await Promise.all([
+  const [guildIconUri, ...itemUris] = await Promise.all([
     imageToDataUri(data.guildIcon || "https://i.ytimg.com/vi/NRRXrZnhT5s/hq720.jpg", 100),
-    top1 ? imageToDataUri(top1.avatar, 100) : FALLBACK_AVATAR,
-    top2 ? imageToDataUri(top2.avatar, 90) : FALLBACK_AVATAR,
-    top3 ? imageToDataUri(top3.avatar, 90) : FALLBACK_AVATAR,
-    ...rest.map((r) => imageToDataUri(r.avatar, 70)),
+    ...items.map((i) => imageToDataUri(i.avatar, 90)),
   ]);
 
-  const element = {
+  const top1Uri = top1 ? (itemUris[items.indexOf(top1)] || FALLBACK_AVATAR) : FALLBACK_AVATAR;
+  const top2Uri = top2 ? (itemUris[items.indexOf(top2)] || FALLBACK_AVATAR) : FALLBACK_AVATAR;
+  const top3Uri = top3 ? (itemUris[items.indexOf(top3)] || FALLBACK_AVATAR) : FALLBACK_AVATAR;
+  const restUris = rest.map((r) => itemUris[items.indexOf(r)] || FALLBACK_AVATAR);
+
+  // 1. Header Banner
+  const headerBanner = {
     type: "div",
     props: {
       style: {
-        width: `${LEADERBOARD_WIDTH}px`,
-        height: `${height}px`,
+        width: "100%",
+        height: "76px",
         display: "flex",
-        flexDirection: "column",
         alignItems: "center",
-        padding: "20px 18px",
-        background: "#18191c",
-        borderRadius: "16px",
+        justifyContent: "space-between",
+        padding: "0 16px",
+        marginBottom: "16px",
+        borderRadius: "14px",
+        background: "rgba(255, 255, 255, 0.04)",
+        border: "1px solid rgba(255, 255, 255, 0.08)",
       },
       children: [
-        // 1. Server Header Banner
         {
           type: "div",
           props: {
             style: {
-              width: "100%",
-              height: "76px",
               display: "flex",
               alignItems: "center",
-              justifyContent: "space-between",
-              padding: "0 16px",
-              marginBottom: "16px",
-              borderRadius: "14px",
-              background: "rgba(255, 255, 255, 0.04)",
-              border: "1px solid rgba(255, 255, 255, 0.08)",
+              gap: "12px",
             },
             children: [
               {
                 type: "div",
                 props: {
                   style: {
+                    width: "50px",
+                    height: "50px",
+                    borderRadius: "14px",
+                    overflow: "hidden",
+                    border: "2px solid rgba(245, 158, 11, 0.4)",
+                    background: "#0c0d12",
                     display: "flex",
                     alignItems: "center",
-                    gap: "12px",
+                    justifyContent: "center",
                   },
                   children: [
                     {
-                      type: "div",
+                      type: "img",
                       props: {
+                        src: guildIconUri,
+                        width: 50,
+                        height: 50,
                         style: {
                           width: "50px",
                           height: "50px",
-                          borderRadius: "14px",
-                          overflow: "hidden",
-                          border: "2px solid rgba(245, 158, 11, 0.4)",
-                          background: "#0c0d12",
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
+                          borderRadius: "12px",
+                          objectFit: "cover",
                         },
-                        children: [
-                          {
-                            type: "img",
-                            props: {
-                              src: guildIconUri,
-                              width: 50,
-                              height: 50,
-                              style: {
-                                width: "50px",
-                                height: "50px",
-                                borderRadius: "12px",
-                                objectFit: "cover",
-                              },
-                            },
-                          },
-                        ],
-                      },
-                    },
-                    {
-                      type: "div",
-                      props: {
-                        style: {
-                          display: "flex",
-                          flexDirection: "column",
-                        },
-                        children: [
-                          {
-                            type: "div",
-                            props: {
-                              style: {
-                                color: "#ffffff",
-                                fontSize: "17px",
-                                fontWeight: 700,
-                                letterSpacing: "0.4px",
-                              },
-                              children: data.guildName || "Server Leaderboard",
-                            },
-                          },
-                          {
-                            type: "div",
-                            props: {
-                              style: {
-                                color: "#94a3b8",
-                                fontSize: "11px",
-                                marginTop: "2px",
-                                display: "flex",
-                              },
-                              children: `Top ${items.length} Members · XP Rankings`,
-                            },
-                          },
-                        ],
                       },
                     },
                   ],
@@ -1054,470 +1070,32 @@ export async function generateLeaderboardImage(data: LeaderboardData): Promise<{
                 type: "div",
                 props: {
                   style: {
-                    padding: "5px 11px",
-                    borderRadius: "999px",
-                    background: "rgba(245, 158, 11, 0.15)",
-                    border: "1px solid rgba(245, 158, 11, 0.35)",
-                    color: "#fbbf24",
-                    fontSize: "11px",
-                    fontWeight: 700,
-                    letterSpacing: "0.5px",
-                    display: "flex",
-                  },
-                  children: "SEASON 1",
-                },
-              },
-            ],
-          },
-        },
-
-        // 2. Top 3 Podium
-        {
-          type: "div",
-          props: {
-            style: {
-              width: "100%",
-              display: "flex",
-              alignItems: "flex-end",
-              justifyContent: "center",
-              gap: "8px",
-              marginBottom: "16px",
-            },
-            children: [
-              // Rank 2 (Left)
-              {
-                type: "div",
-                props: {
-                  style: {
-                    flex: 1,
-                    height: "232px",
-                    position: "relative",
                     display: "flex",
                     flexDirection: "column",
-                    alignItems: "center",
-                    justifyContent: "flex-end",
                   },
                   children: [
-                    // Pedestal box drawn FIRST in DOM
                     {
                       type: "div",
                       props: {
                         style: {
-                          width: "100%",
-                          height: "152px",
-                          background: "linear-gradient(180deg, #242a38 0%, #171b26 100%)",
-                          borderRadius: "14px 14px 0 0",
-                          borderTop: "3px solid #38bdf8",
-                          borderLeft: "1px solid rgba(56, 189, 248, 0.2)",
-                          borderRight: "1px solid rgba(56, 189, 248, 0.2)",
-                          paddingTop: "34px",
-                          display: "flex",
-                          flexDirection: "column",
-                          alignItems: "center",
+                          color: "#ffffff",
+                          fontSize: "17px",
+                          fontWeight: 700,
+                          letterSpacing: "0.4px",
                         },
-                        children: [
-                          {
-                            type: "div",
-                            props: {
-                              style: {
-                                color: "#ffffff",
-                                fontSize: "15px",
-                                fontWeight: 600,
-                                width: "135px",
-                                textAlign: "center",
-                                overflow: "hidden",
-                                textOverflow: "ellipsis",
-                                whiteSpace: "nowrap",
-                              },
-                              children: top2?.username || "Player 2",
-                            },
-                          },
-                          {
-                            type: "div",
-                            props: {
-                              style: { color: "#94a3b8", fontSize: "11px", marginTop: "2px" },
-                              children: top2?.handle || "@player2",
-                            },
-                          },
-                          {
-                            type: "div",
-                            props: {
-                              style: {
-                                color: "#38bdf8",
-                                fontSize: "12px",
-                                fontWeight: 600,
-                                marginTop: "10px",
-                                background: "rgba(56, 189, 248, 0.12)",
-                                padding: "2px 8px",
-                                borderRadius: "999px",
-                                display: "flex",
-                              },
-                              children: `Level ${top2?.level ?? 1}`,
-                            },
-                          },
-                          {
-                            type: "div",
-                            props: {
-                              style: { color: "#38bdf8", fontSize: "12px", marginTop: "4px" },
-                              children: `${top2?.xp ?? 0} XP`,
-                            },
-                          },
-                        ],
+                        children: data.guildName || "Server Leaderboard",
                       },
                     },
-                    // Avatar and Badge drawn SECOND in DOM (sitting on top)
                     {
                       type: "div",
                       props: {
                         style: {
-                          position: "absolute",
-                          bottom: "124px",
+                          color: "#94a3b8",
+                          fontSize: "11px",
+                          marginTop: "2px",
                           display: "flex",
-                          flexDirection: "column",
-                          alignItems: "center",
                         },
-                        children: [
-                          {
-                            type: "img",
-                            props: {
-                              src: top2Uri,
-                              width: 64,
-                              height: 64,
-                              style: {
-                                width: "64px",
-                                height: "64px",
-                                borderRadius: "999px",
-                                border: "3px solid #38bdf8",
-                                objectFit: "cover",
-                              },
-                            },
-                          },
-                          {
-                            type: "div",
-                            props: {
-                              style: {
-                                marginTop: "-14px",
-                                width: "24px",
-                                height: "24px",
-                                borderRadius: "999px",
-                                background: "#38bdf8",
-                                color: "#000000",
-                                fontSize: "12px",
-                                fontWeight: 700,
-                                display: "flex",
-                                alignItems: "center",
-                                justifyContent: "center",
-                              },
-                              children: "2",
-                            },
-                          },
-                        ],
-                      },
-                    },
-                  ],
-                },
-              },
-
-              // Rank 1 (Center)
-              {
-                type: "div",
-                props: {
-                  style: {
-                    flex: 1.1,
-                    height: "265px",
-                    position: "relative",
-                    display: "flex",
-                    flexDirection: "column",
-                    alignItems: "center",
-                    justifyContent: "flex-end",
-                  },
-                  children: [
-                    // Pedestal box drawn FIRST in DOM
-                    {
-                      type: "div",
-                      props: {
-                        style: {
-                          width: "100%",
-                          height: "178px",
-                          background: "linear-gradient(180deg, #2d263b 0%, #1c1827 100%)",
-                          borderRadius: "14px 14px 0 0",
-                          borderTop: "3px solid #f59e0b",
-                          borderLeft: "1px solid rgba(245, 158, 11, 0.25)",
-                          borderRight: "1px solid rgba(245, 158, 11, 0.25)",
-                          paddingTop: "36px",
-                          display: "flex",
-                          flexDirection: "column",
-                          alignItems: "center",
-                        },
-                        children: [
-                          {
-                            type: "div",
-                            props: {
-                              style: {
-                                color: "#ffffff",
-                                fontSize: "16px",
-                                fontWeight: 700,
-                                width: "145px",
-                                textAlign: "center",
-                                overflow: "hidden",
-                                textOverflow: "ellipsis",
-                                whiteSpace: "nowrap",
-                              },
-                              children: top1?.username || "Winner",
-                            },
-                          },
-                          {
-                            type: "div",
-                            props: {
-                              style: { color: "#94a3b8", fontSize: "11px", marginTop: "2px" },
-                              children: top1?.handle || "@winner",
-                            },
-                          },
-                          {
-                            type: "div",
-                            props: {
-                              style: {
-                                color: "#f59e0b",
-                                fontSize: "12px",
-                                fontWeight: 700,
-                                marginTop: "10px",
-                                background: "rgba(245, 158, 11, 0.18)",
-                                padding: "2px 10px",
-                                borderRadius: "999px",
-                                display: "flex",
-                              },
-                              children: `Level ${top1?.level ?? 1}`,
-                            },
-                          },
-                          {
-                            type: "div",
-                            props: {
-                              style: { color: "#f59e0b", fontSize: "12px", fontWeight: 600, marginTop: "4px" },
-                              children: `${top1?.xp ?? 0} XP`,
-                            },
-                          },
-                        ],
-                      },
-                    },
-                    // Crown, Avatar and Badge drawn SECOND in DOM
-                    {
-                      type: "div",
-                      props: {
-                        style: {
-                          position: "absolute",
-                          bottom: "146px",
-                          display: "flex",
-                          flexDirection: "column",
-                          alignItems: "center",
-                        },
-                        children: [
-                          // Vector SVG Crown
-                          {
-                            type: "svg",
-                            props: {
-                              width: 32,
-                              height: 22,
-                              viewBox: "0 0 34 24",
-                              style: { width: "32px", height: "22px", marginBottom: "4px" },
-                              children: [
-                                {
-                                  type: "path",
-                                  props: {
-                                    d: "M3 20h28v2H3v-2zm1.5-14l6.5 6 6-10 6 10 6.5-6 2 12H2.5l2-12z",
-                                    fill: "#f59e0b",
-                                  },
-                                },
-                                {
-                                  type: "path",
-                                  props: {
-                                    d: "M17 2l-6 10 6-3 6 3-6-10z",
-                                    fill: "#fbbf24",
-                                  },
-                                },
-                                {
-                                  type: "circle",
-                                  props: { cx: 4.5, cy: 5.5, r: 1.8, fill: "#fef08a" },
-                                },
-                                {
-                                  type: "circle",
-                                  props: { cx: 17, cy: 1.8, r: 2.2, fill: "#fef08a" },
-                                },
-                                {
-                                  type: "circle",
-                                  props: { cx: 29.5, cy: 5.5, r: 1.8, fill: "#fef08a" },
-                                },
-                              ],
-                            },
-                          },
-                          {
-                            type: "img",
-                            props: {
-                              src: top1Uri,
-                              width: 72,
-                              height: 72,
-                              style: {
-                                width: "72px",
-                                height: "72px",
-                                borderRadius: "999px",
-                                border: "3px solid #f59e0b",
-                                objectFit: "cover",
-                              },
-                            },
-                          },
-                          {
-                            type: "div",
-                            props: {
-                              style: {
-                                marginTop: "-14px",
-                                width: "26px",
-                                height: "26px",
-                                borderRadius: "999px",
-                                background: "#f59e0b",
-                                color: "#000000",
-                                fontSize: "13px",
-                                fontWeight: 700,
-                                display: "flex",
-                                alignItems: "center",
-                                justifyContent: "center",
-                              },
-                              children: "1",
-                            },
-                          },
-                        ],
-                      },
-                    },
-                  ],
-                },
-              },
-
-              // Rank 3 (Right)
-              {
-                type: "div",
-                props: {
-                  style: {
-                    flex: 1,
-                    height: "218px",
-                    position: "relative",
-                    display: "flex",
-                    flexDirection: "column",
-                    alignItems: "center",
-                    justifyContent: "flex-end",
-                  },
-                  children: [
-                    // Pedestal box drawn FIRST in DOM
-                    {
-                      type: "div",
-                      props: {
-                        style: {
-                          width: "100%",
-                          height: "138px",
-                          background: "linear-gradient(180deg, #2b2323 0%, #1b1717 100%)",
-                          borderRadius: "14px 14px 0 0",
-                          borderTop: "3px solid #f97316",
-                          borderLeft: "1px solid rgba(249, 115, 22, 0.2)",
-                          borderRight: "1px solid rgba(249, 115, 22, 0.2)",
-                          paddingTop: "34px",
-                          display: "flex",
-                          flexDirection: "column",
-                          alignItems: "center",
-                        },
-                        children: [
-                          {
-                            type: "div",
-                            props: {
-                              style: {
-                                color: "#ffffff",
-                                fontSize: "14px",
-                                fontWeight: 600,
-                                width: "135px",
-                                textAlign: "center",
-                                overflow: "hidden",
-                                textOverflow: "ellipsis",
-                                whiteSpace: "nowrap",
-                              },
-                              children: top3?.username || "Player 3",
-                            },
-                          },
-                          {
-                            type: "div",
-                            props: {
-                              style: { color: "#94a3b8", fontSize: "11px", marginTop: "2px" },
-                              children: top3?.handle || "@player3",
-                            },
-                          },
-                          {
-                            type: "div",
-                            props: {
-                              style: {
-                                color: "#f97316",
-                                fontSize: "12px",
-                                fontWeight: 600,
-                                marginTop: "10px",
-                                background: "rgba(249, 115, 22, 0.12)",
-                                padding: "2px 8px",
-                                borderRadius: "999px",
-                                display: "flex",
-                              },
-                              children: `Level ${top3?.level ?? 1}`,
-                            },
-                          },
-                          {
-                            type: "div",
-                            props: {
-                              style: { color: "#f97316", fontSize: "12px", marginTop: "4px" },
-                              children: `${top3?.xp ?? 0} XP`,
-                            },
-                          },
-                        ],
-                      },
-                    },
-                    // Avatar and Badge drawn SECOND in DOM
-                    {
-                      type: "div",
-                      props: {
-                        style: {
-                          position: "absolute",
-                          bottom: "110px",
-                          display: "flex",
-                          flexDirection: "column",
-                          alignItems: "center",
-                        },
-                        children: [
-                          {
-                            type: "img",
-                            props: {
-                              src: top3Uri,
-                              width: 64,
-                              height: 64,
-                              style: {
-                                width: "64px",
-                                height: "64px",
-                                borderRadius: "999px",
-                                border: "3px solid #f97316",
-                                objectFit: "cover",
-                              },
-                            },
-                          },
-                          {
-                            type: "div",
-                            props: {
-                              style: {
-                                marginTop: "-14px",
-                                width: "24px",
-                                height: "24px",
-                                borderRadius: "999px",
-                                background: "#f97316",
-                                color: "#000000",
-                                fontSize: "12px",
-                                fontWeight: 700,
-                                display: "flex",
-                                alignItems: "center",
-                                justifyContent: "center",
-                              },
-                              children: "3",
-                            },
-                          },
-                        ],
+                        children: `Top ${items.length} Members · XP Rankings`,
                       },
                     },
                   ],
@@ -1526,70 +1104,86 @@ export async function generateLeaderboardImage(data: LeaderboardData): Promise<{
             ],
           },
         },
-
-        // 3. Ranks 4 to N List
         {
           type: "div",
           props: {
             style: {
-              width: "100%",
+              padding: "5px 11px",
+              borderRadius: "999px",
+              background: "rgba(245, 158, 11, 0.15)",
+              border: "1px solid rgba(245, 158, 11, 0.35)",
+              color: "#fbbf24",
+              fontSize: "11px",
+              fontWeight: 700,
+              letterSpacing: "0.5px",
               display: "flex",
-              flexDirection: "column",
-              gap: "8px",
             },
-            children: rest.map((item, idx) => ({
+            children: data.season || "SEASON 1",
+          },
+        },
+      ],
+    },
+  };
+
+  // Body content based on layout
+  let bodyElements: any[] = [];
+
+  if (layout === "compact-list") {
+    bodyElements = [
+      {
+        type: "div",
+        props: {
+          style: {
+            width: "100%",
+            display: "flex",
+            flexDirection: "column",
+            gap: "8px",
+          },
+          children: items.map((item, idx) => {
+            const rankColor =
+              item.rank === 1 ? "#f59e0b" : item.rank === 2 ? "#38bdf8" : item.rank === 3 ? "#f97316" : "#64748b";
+            const uri = itemUris[idx] || FALLBACK_AVATAR;
+            return {
               type: "div",
               props: {
                 style: {
                   width: "100%",
-                  height: "68px",
-                  background: "rgba(255, 255, 255, 0.04)",
-                  border: "1px solid rgba(255, 255, 255, 0.06)",
-                  borderRadius: "12px",
+                  height: "64px",
                   display: "flex",
                   alignItems: "center",
                   padding: "0 16px",
+                  borderRadius: "12px",
+                  background: "rgba(255, 255, 255, 0.04)",
+                  border: "1px solid rgba(255, 255, 255, 0.06)",
                 },
                 children: [
                   {
                     type: "div",
                     props: {
                       style: {
-                        width: "36px",
+                        width: "32px",
                         display: "flex",
-                        flexDirection: "column",
                         alignItems: "center",
-                        marginRight: "10px",
+                        justifyContent: "center",
+                        marginRight: "12px",
+                        fontSize: "16px",
+                        fontWeight: 700,
+                        color: rankColor,
                       },
-                      children: [
-                        {
-                          type: "div",
-                          props: {
-                            style: { color: "#ffffff", fontSize: "18px", fontWeight: 700, lineHeight: "20px" },
-                            children: String(item.rank),
-                          },
-                        },
-                        {
-                          type: "div",
-                          props: {
-                            style: { color: "#94a3b8", fontSize: "10px", lineHeight: "12px" },
-                            children: "Rank",
-                          },
-                        },
-                      ],
+                      children: item.rank === 1 ? "1" : item.rank === 2 ? "2" : item.rank === 3 ? "3" : `#${item.rank}`,
                     },
                   },
                   {
                     type: "img",
                     props: {
-                      src: restUris[idx] || FALLBACK_AVATAR,
-                      width: 46,
-                      height: 46,
+                      src: uri,
+                      width: 44,
+                      height: 44,
                       style: {
-                        width: "46px",
-                        height: "46px",
+                        width: "44px",
+                        height: "44px",
                         borderRadius: "999px",
-                        border: "2px solid rgba(255, 255, 255, 0.12)",
+                        border: `2px solid ${rankColor}`,
                         objectFit: "cover",
                         marginRight: "14px",
                       },
@@ -1602,20 +1196,27 @@ export async function generateLeaderboardImage(data: LeaderboardData): Promise<{
                         flex: 1,
                         display: "flex",
                         flexDirection: "column",
-                        minWidth: 0,
                       },
                       children: [
                         {
                           type: "div",
                           props: {
-                            style: { color: "#ffffff", fontSize: "15px", fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" },
+                            style: {
+                              fontSize: "15px",
+                              fontWeight: 600,
+                              color: "#ffffff",
+                            },
                             children: item.username,
                           },
                         },
                         {
                           type: "div",
                           props: {
-                            style: { color: "#94a3b8", fontSize: "12px", marginTop: "2px" },
+                            style: {
+                              fontSize: "11px",
+                              color: "#94a3b8",
+                              marginTop: "2px",
+                            },
                             children: item.handle,
                           },
                         },
@@ -1634,14 +1235,27 @@ export async function generateLeaderboardImage(data: LeaderboardData): Promise<{
                         {
                           type: "div",
                           props: {
-                            style: { color: "#f1f5f9", fontSize: "13px", fontWeight: 600 },
+                            style: {
+                              padding: "2px 8px",
+                              borderRadius: "999px",
+                              background: `${rankColor}25`,
+                              border: `1px solid ${rankColor}55`,
+                              color: rankColor,
+                              fontSize: "11px",
+                              fontWeight: 700,
+                            },
                             children: `Level ${item.level}`,
                           },
                         },
                         {
                           type: "div",
                           props: {
-                            style: { color: "#94a3b8", fontSize: "12px", marginTop: "2px" },
+                            style: {
+                              fontSize: "12px",
+                              fontWeight: 600,
+                              color: "#cbd5e1",
+                              marginTop: "4px",
+                            },
                             children: `${item.xp} XP`,
                           },
                         },
@@ -1650,10 +1264,760 @@ export async function generateLeaderboardImage(data: LeaderboardData): Promise<{
                   },
                 ],
               },
-            })),
-          },
+            };
+          }),
         },
-      ],
+      },
+    ];
+  } else if (layout === "cyber-grid") {
+    bodyElements = [
+      {
+        type: "div",
+        props: {
+          style: {
+            width: "100%",
+            display: "flex",
+            flexWrap: "wrap",
+            gap: "8px",
+            justifyContent: "space-between",
+          },
+          children: items.map((item, idx) => {
+            const rankColor =
+              item.rank === 1 ? "#38bdf8" : item.rank === 2 ? "#c084fc" : item.rank === 3 ? "#f59e0b" : "#475569";
+            const uri = itemUris[idx] || FALLBACK_AVATAR;
+            return {
+              type: "div",
+              props: {
+                style: {
+                  width: "248px",
+                  height: "82px",
+                  display: "flex",
+                  alignItems: "center",
+                  padding: "10px",
+                  borderRadius: "14px",
+                  background: "rgba(0, 0, 0, 0.5)",
+                  border: `1px solid ${rankColor}66`,
+                  boxShadow: `0 0 15px ${rankColor}15`,
+                  position: "relative",
+                },
+                children: [
+                  {
+                    type: "div",
+                    props: {
+                      style: {
+                        position: "relative",
+                        width: "48px",
+                        height: "48px",
+                        marginRight: "10px",
+                      },
+                      children: [
+                        {
+                          type: "img",
+                          props: {
+                            src: uri,
+                            width: 48,
+                            height: 48,
+                            style: {
+                              width: "48px",
+                              height: "48px",
+                              borderRadius: "12px",
+                              border: `2px solid ${rankColor}`,
+                              objectFit: "cover",
+                            },
+                          },
+                        },
+                        {
+                          type: "div",
+                          props: {
+                            style: {
+                              position: "absolute",
+                              top: "-6px",
+                              left: "-6px",
+                              width: "20px",
+                              height: "20px",
+                              borderRadius: "999px",
+                              background: rankColor,
+                              color: "#000000",
+                              fontSize: "11px",
+                              fontWeight: 700,
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                            },
+                            children: String(item.rank),
+                          },
+                        },
+                      ],
+                    },
+                  },
+                  {
+                    type: "div",
+                    props: {
+                      style: {
+                        flex: 1,
+                        display: "flex",
+                        flexDirection: "column",
+                      },
+                      children: [
+                        {
+                          type: "div",
+                          props: {
+                            style: {
+                              fontSize: "13px",
+                              fontWeight: 700,
+                              color: "#ffffff",
+                              overflow: "hidden",
+                              textOverflow: "ellipsis",
+                              whiteSpace: "nowrap",
+                            },
+                            children: item.username,
+                          },
+                        },
+                        {
+                          type: "div",
+                          props: {
+                            style: {
+                              fontSize: "10px",
+                              color: "#94a3b8",
+                            },
+                            children: item.handle,
+                          },
+                        },
+                        {
+                          type: "div",
+                          props: {
+                            style: {
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "space-between",
+                              marginTop: "4px",
+                            },
+                            children: [
+                              {
+                                type: "div",
+                                props: {
+                                  style: {
+                                    fontSize: "11px",
+                                    fontWeight: 700,
+                                    color: rankColor,
+                                  },
+                                  children: `Lv.${item.level}`,
+                                },
+                              },
+                              {
+                                type: "div",
+                                props: {
+                                  style: {
+                                    fontSize: "10px",
+                                    color: "#cbd5e1",
+                                  },
+                                  children: `${item.xp} XP`,
+                                },
+                              },
+                            ],
+                          },
+                        },
+                      ],
+                    },
+                  },
+                ],
+              },
+            };
+          }),
+        },
+      },
+    ];
+  } else {
+    // Podium (Original)
+    bodyElements = [
+      {
+        type: "div",
+        props: {
+          style: {
+            width: "100%",
+            display: "flex",
+            alignItems: "flex-end",
+            justifyContent: "center",
+            gap: "8px",
+            marginBottom: "16px",
+          },
+          children: [
+            // Rank 2 (Left)
+            {
+              type: "div",
+              props: {
+                style: {
+                  flex: 1,
+                  height: "232px",
+                  position: "relative",
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  justifyContent: "flex-end",
+                },
+                children: [
+                  {
+                    type: "div",
+                    props: {
+                      style: {
+                        width: "100%",
+                        height: "152px",
+                        background: "linear-gradient(180deg, #242a38 0%, #171b26 100%)",
+                        borderRadius: "14px 14px 0 0",
+                        borderTop: "3px solid #38bdf8",
+                        borderLeft: "1px solid rgba(56, 189, 248, 0.2)",
+                        borderRight: "1px solid rgba(56, 189, 248, 0.2)",
+                        paddingTop: "34px",
+                        display: "flex",
+                        flexDirection: "column",
+                        alignItems: "center",
+                      },
+                      children: [
+                        {
+                          type: "div",
+                          props: {
+                            style: {
+                              color: "#ffffff",
+                              fontSize: "15px",
+                              fontWeight: 600,
+                              width: "135px",
+                              textAlign: "center",
+                              overflow: "hidden",
+                              textOverflow: "ellipsis",
+                              whiteSpace: "nowrap",
+                            },
+                            children: top2?.username || "Player 2",
+                          },
+                        },
+                        {
+                          type: "div",
+                          props: {
+                            style: { color: "#94a3b8", fontSize: "11px", marginTop: "2px" },
+                            children: top2?.handle || "@player2",
+                          },
+                        },
+                        {
+                          type: "div",
+                          props: {
+                            style: {
+                              color: "#38bdf8",
+                              fontSize: "12px",
+                              fontWeight: 600,
+                              marginTop: "10px",
+                              background: "rgba(56, 189, 248, 0.12)",
+                              padding: "2px 8px",
+                              borderRadius: "999px",
+                              display: "flex",
+                            },
+                            children: `Level ${top2?.level ?? 1}`,
+                          },
+                        },
+                        {
+                          type: "div",
+                          props: {
+                            style: { color: "#38bdf8", fontSize: "12px", marginTop: "4px" },
+                            children: `${top2?.xp ?? 0} XP`,
+                          },
+                        },
+                      ],
+                    },
+                  },
+                  {
+                    type: "div",
+                    props: {
+                      style: {
+                        position: "absolute",
+                        bottom: "124px",
+                        display: "flex",
+                        flexDirection: "column",
+                        alignItems: "center",
+                      },
+                      children: [
+                        {
+                          type: "img",
+                          props: {
+                            src: top2Uri,
+                            width: 64,
+                            height: 64,
+                            style: {
+                              width: "64px",
+                              height: "64px",
+                              borderRadius: "999px",
+                              border: "3px solid #38bdf8",
+                              objectFit: "cover",
+                            },
+                          },
+                        },
+                        {
+                          type: "div",
+                          props: {
+                            style: {
+                              marginTop: "-14px",
+                              width: "24px",
+                              height: "24px",
+                              borderRadius: "999px",
+                              background: "#38bdf8",
+                              color: "#000000",
+                              fontSize: "12px",
+                              fontWeight: 700,
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                            },
+                            children: "2",
+                          },
+                        },
+                      ],
+                    },
+                  },
+                ],
+              },
+            },
+            // Rank 1 (Center)
+            {
+              type: "div",
+              props: {
+                style: {
+                  flex: 1.1,
+                  height: "265px",
+                  position: "relative",
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  justifyContent: "flex-end",
+                },
+                children: [
+                  {
+                    type: "div",
+                    props: {
+                      style: {
+                        width: "100%",
+                        height: "178px",
+                        background: "linear-gradient(180deg, #2d263b 0%, #1c1827 100%)",
+                        borderRadius: "14px 14px 0 0",
+                        borderTop: "3px solid #f59e0b",
+                        borderLeft: "1px solid rgba(245, 158, 11, 0.25)",
+                        borderRight: "1px solid rgba(245, 158, 11, 0.25)",
+                        paddingTop: "36px",
+                        display: "flex",
+                        flexDirection: "column",
+                        alignItems: "center",
+                      },
+                      children: [
+                        {
+                          type: "div",
+                          props: {
+                            style: {
+                              color: "#ffffff",
+                              fontSize: "16px",
+                              fontWeight: 700,
+                              width: "145px",
+                              textAlign: "center",
+                              overflow: "hidden",
+                              textOverflow: "ellipsis",
+                              whiteSpace: "nowrap",
+                            },
+                            children: top1?.username || "Winner",
+                          },
+                        },
+                        {
+                          type: "div",
+                          props: {
+                            style: { color: "#94a3b8", fontSize: "11px", marginTop: "2px" },
+                            children: top1?.handle || "@winner",
+                          },
+                        },
+                        {
+                          type: "div",
+                          props: {
+                            style: {
+                              color: "#f59e0b",
+                              fontSize: "12px",
+                              fontWeight: 700,
+                              marginTop: "10px",
+                              background: "rgba(245, 158, 11, 0.18)",
+                              padding: "2px 10px",
+                              borderRadius: "999px",
+                              display: "flex",
+                            },
+                            children: `Level ${top1?.level ?? 1}`,
+                          },
+                        },
+                        {
+                          type: "div",
+                          props: {
+                            style: { color: "#f59e0b", fontSize: "12px", fontWeight: 600, marginTop: "4px" },
+                            children: `${top1?.xp ?? 0} XP`,
+                          },
+                        },
+                      ],
+                    },
+                  },
+                  {
+                    type: "div",
+                    props: {
+                      style: {
+                        position: "absolute",
+                        bottom: "146px",
+                        display: "flex",
+                        flexDirection: "column",
+                        alignItems: "center",
+                      },
+                      children: [
+                        {
+                          type: "svg",
+                          props: {
+                            width: 32,
+                            height: 22,
+                            viewBox: "0 0 34 24",
+                            style: { width: "32px", height: "22px", marginBottom: "4px" },
+                            children: [
+                              {
+                                type: "path",
+                                props: {
+                                  d: "M3 20h28v2H3v-2zm1.5-14l6.5 6 6-10 6 10 6.5-6 2 12H2.5l2-12z",
+                                  fill: "#f59e0b",
+                                },
+                              },
+                              {
+                                type: "path",
+                                props: {
+                                  d: "M17 2l-6 10 6-3 6 3-6-10z",
+                                  fill: "#fbbf24",
+                                },
+                              },
+                              {
+                                type: "circle",
+                                props: { cx: 4.5, cy: 5.5, r: 1.8, fill: "#fef08a" },
+                              },
+                              {
+                                type: "circle",
+                                props: { cx: 17, cy: 1.8, r: 2.2, fill: "#fef08a" },
+                              },
+                              {
+                                type: "circle",
+                                props: { cx: 29.5, cy: 5.5, r: 1.8, fill: "#fef08a" },
+                              },
+                            ],
+                          },
+                        },
+                        {
+                          type: "img",
+                          props: {
+                            src: top1Uri,
+                            width: 72,
+                            height: 72,
+                            style: {
+                              width: "72px",
+                              height: "72px",
+                              borderRadius: "999px",
+                              border: "3px solid #f59e0b",
+                              objectFit: "cover",
+                            },
+                          },
+                        },
+                        {
+                          type: "div",
+                          props: {
+                            style: {
+                              marginTop: "-14px",
+                              width: "26px",
+                              height: "26px",
+                              borderRadius: "999px",
+                              background: "#f59e0b",
+                              color: "#000000",
+                              fontSize: "13px",
+                              fontWeight: 700,
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                            },
+                            children: "1",
+                          },
+                        },
+                      ],
+                    },
+                  },
+                ],
+              },
+            },
+            // Rank 3 (Right)
+            {
+              type: "div",
+              props: {
+                style: {
+                  flex: 1,
+                  height: "218px",
+                  position: "relative",
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  justifyContent: "flex-end",
+                },
+                children: [
+                  {
+                    type: "div",
+                    props: {
+                      style: {
+                        width: "100%",
+                        height: "138px",
+                        background: "linear-gradient(180deg, #2b2323 0%, #1b1717 100%)",
+                        borderRadius: "14px 14px 0 0",
+                        borderTop: "3px solid #f97316",
+                        borderLeft: "1px solid rgba(249, 115, 22, 0.2)",
+                        borderRight: "1px solid rgba(249, 115, 22, 0.2)",
+                        paddingTop: "34px",
+                        display: "flex",
+                        flexDirection: "column",
+                        alignItems: "center",
+                      },
+                      children: [
+                        {
+                          type: "div",
+                          props: {
+                            style: {
+                              color: "#ffffff",
+                              fontSize: "14px",
+                              fontWeight: 600,
+                              width: "135px",
+                              textAlign: "center",
+                              overflow: "hidden",
+                              textOverflow: "ellipsis",
+                              whiteSpace: "nowrap",
+                            },
+                            children: top3?.username || "Player 3",
+                          },
+                        },
+                        {
+                          type: "div",
+                          props: {
+                            style: { color: "#94a3b8", fontSize: "11px", marginTop: "2px" },
+                            children: top3?.handle || "@player3",
+                          },
+                        },
+                        {
+                          type: "div",
+                          props: {
+                            style: {
+                              color: "#f97316",
+                              fontSize: "12px",
+                              fontWeight: 600,
+                              marginTop: "10px",
+                              background: "rgba(249, 115, 22, 0.12)",
+                              padding: "2px 8px",
+                              borderRadius: "999px",
+                              display: "flex",
+                            },
+                            children: `Level ${top3?.level ?? 1}`,
+                          },
+                        },
+                        {
+                          type: "div",
+                          props: {
+                            style: { color: "#f97316", fontSize: "12px", marginTop: "4px" },
+                            children: `${top3?.xp ?? 0} XP`,
+                          },
+                        },
+                      ],
+                    },
+                  },
+                  {
+                    type: "div",
+                    props: {
+                      style: {
+                        position: "absolute",
+                        bottom: "110px",
+                        display: "flex",
+                        flexDirection: "column",
+                        alignItems: "center",
+                      },
+                      children: [
+                        {
+                          type: "img",
+                          props: {
+                            src: top3Uri,
+                            width: 64,
+                            height: 64,
+                            style: {
+                              width: "64px",
+                              height: "64px",
+                              borderRadius: "999px",
+                              border: "3px solid #f97316",
+                              objectFit: "cover",
+                            },
+                          },
+                        },
+                        {
+                          type: "div",
+                          props: {
+                            style: {
+                              marginTop: "-14px",
+                              width: "24px",
+                              height: "24px",
+                              borderRadius: "999px",
+                              background: "#f97316",
+                              color: "#000000",
+                              fontSize: "12px",
+                              fontWeight: 700,
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                            },
+                            children: "3",
+                          },
+                        },
+                      ],
+                    },
+                  },
+                ],
+              },
+            },
+          ],
+        },
+      },
+      // Ranks 4 to 10 Rows
+      {
+        type: "div",
+        props: {
+          style: {
+            width: "100%",
+            display: "flex",
+            flexDirection: "column",
+            gap: "8px",
+          },
+          children: rest.map((item, idx) => ({
+            type: "div",
+            props: {
+              style: {
+                width: "100%",
+                height: "68px",
+                background: "rgba(255, 255, 255, 0.04)",
+                border: "1px solid rgba(255, 255, 255, 0.06)",
+                borderRadius: "12px",
+                display: "flex",
+                alignItems: "center",
+                padding: "0 16px",
+              },
+              children: [
+                {
+                  type: "div",
+                  props: {
+                    style: {
+                      width: "36px",
+                      display: "flex",
+                      flexDirection: "column",
+                      alignItems: "center",
+                      marginRight: "10px",
+                    },
+                    children: [
+                      {
+                        type: "div",
+                        props: {
+                          style: { color: "#ffffff", fontSize: "18px", fontWeight: 700, lineHeight: "20px" },
+                          children: String(item.rank),
+                        },
+                      },
+                      {
+                        type: "div",
+                        props: {
+                          style: { color: "#94a3b8", fontSize: "10px", lineHeight: "12px" },
+                          children: "Rank",
+                        },
+                      },
+                    ],
+                  },
+                },
+                {
+                  type: "img",
+                  props: {
+                    src: restUris[idx] || FALLBACK_AVATAR,
+                    width: 46,
+                    height: 46,
+                    style: {
+                      width: "46px",
+                      height: "46px",
+                      borderRadius: "999px",
+                      border: "2px solid rgba(255, 255, 255, 0.12)",
+                      objectFit: "cover",
+                      marginRight: "14px",
+                    },
+                  },
+                },
+                {
+                  type: "div",
+                  props: {
+                    style: {
+                      flex: 1,
+                      display: "flex",
+                      flexDirection: "column",
+                      minWidth: 0,
+                    },
+                    children: [
+                      {
+                        type: "div",
+                        props: {
+                          style: { color: "#ffffff", fontSize: "15px", fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" },
+                          children: item.username,
+                        },
+                      },
+                      {
+                        type: "div",
+                        props: {
+                          style: { color: "#94a3b8", fontSize: "12px", marginTop: "2px" },
+                          children: item.handle,
+                        },
+                      },
+                    ],
+                  },
+                },
+                {
+                  type: "div",
+                  props: {
+                    style: {
+                      display: "flex",
+                      flexDirection: "column",
+                      alignItems: "flex-end",
+                    },
+                    children: [
+                      {
+                        type: "div",
+                        props: {
+                          style: { color: "#f1f5f9", fontSize: "13px", fontWeight: 600 },
+                          children: `Level ${item.level}`,
+                        },
+                      },
+                      {
+                        type: "div",
+                        props: {
+                          style: { color: "#94a3b8", fontSize: "12px", marginTop: "2px" },
+                          children: `${item.xp} XP`,
+                        },
+                      },
+                    ],
+                  },
+                },
+              ],
+            },
+          })),
+        },
+      },
+    ];
+  }
+
+  const element = {
+    type: "div",
+    props: {
+      style: {
+        width: `${LEADERBOARD_WIDTH}px`,
+        height: `${height}px`,
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        padding: "20px 18px",
+        background: "#18191c",
+        borderRadius: "16px",
+      },
+      children: [headerBanner, ...bodyElements],
     },
   };
 
@@ -1675,135 +2039,683 @@ export async function generateLeaderboardImage(data: LeaderboardData): Promise<{
 
 export async function generateQuoteImage(data: QuoteData): Promise<{ png: Buffer; height: number }> {
   const avatarUri = await imageToDataUri(data.avatar, 500);
+  const layout = data.layout || "split-portrait";
 
-  const element = {
-    type: "div",
-    props: {
-      style: {
-        width: `${QUOTE_WIDTH}px`,
-        height: `${QUOTE_HEIGHT}px`,
-        display: "flex",
-        background: "#000000",
-        position: "relative",
-        overflow: "hidden",
+  let element: any;
+
+  if (layout === "centered-minimal") {
+    element = {
+      type: "div",
+      props: {
+        style: {
+          width: `${QUOTE_WIDTH}px`,
+          height: `${QUOTE_HEIGHT}px`,
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
+          padding: "40px 60px",
+          background: "radial-gradient(circle at 50% 20%, #1e1b4b 0%, #090a12 60%, #030408 100%)",
+          border: "1px solid rgba(255, 255, 255, 0.1)",
+          position: "relative",
+        },
+        children: [
+          // Background ambient quote mark
+          {
+            type: "div",
+            props: {
+              style: {
+                position: "absolute",
+                top: "20px",
+                fontSize: "140px",
+                fontWeight: 700,
+                color: "rgba(99, 102, 241, 0.12)",
+                lineHeight: "140px",
+              },
+              children: "“",
+            },
+          },
+          // Avatar
+          {
+            type: "div",
+            props: {
+              style: {
+                width: "96px",
+                height: "96px",
+                borderRadius: "999px",
+                padding: "3px",
+                background: "linear-gradient(135deg, #6366f1, #a855f7, #ec4899)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                marginBottom: "20px",
+              },
+              children: [
+                {
+                  type: "img",
+                  props: {
+                    src: avatarUri,
+                    width: 90,
+                    height: 90,
+                    style: {
+                      width: "90px",
+                      height: "90px",
+                      borderRadius: "999px",
+                      objectFit: "cover",
+                    },
+                  },
+                },
+              ],
+            },
+          },
+          // Quote Text
+          {
+            type: "div",
+            props: {
+              style: {
+                maxWidth: "820px",
+                fontSize: "32px",
+                fontWeight: 400,
+                lineHeight: "44px",
+                color: "#ffffff",
+                textAlign: "center",
+              },
+              children: `"${data.quote || "Quote text"}"`,
+            },
+          },
+          // Separator line
+          {
+            type: "div",
+            props: {
+              style: {
+                width: "100px",
+                height: "2px",
+                background: "linear-gradient(90deg, transparent, rgba(129, 140, 248, 0.8), transparent)",
+                margin: "18px 0",
+              },
+            },
+          },
+          // Author & Handle
+          {
+            type: "div",
+            props: {
+              style: {
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                gap: "4px",
+              },
+              children: [
+                {
+                  type: "div",
+                  props: {
+                    style: {
+                      fontSize: "22px",
+                      fontWeight: 600,
+                      color: "#c7d2fe",
+                    },
+                    children: data.author || "Author",
+                  },
+                },
+                {
+                  type: "div",
+                  props: {
+                    style: {
+                      fontSize: "14px",
+                      color: "#94a3b8",
+                      display: "flex",
+                      gap: "8px",
+                    },
+                    children: [
+                      {
+                        type: "span",
+                        props: { children: data.handle || "@handle" },
+                      },
+                      {
+                        type: "span",
+                        props: { children: "·" },
+                      },
+                      {
+                        type: "span",
+                        props: {
+                          style: { color: "rgba(165, 180, 252, 0.8)", fontFamily: "monospace" },
+                          children: data.tag || "Verified",
+                        },
+                      },
+                    ],
+                  },
+                },
+              ],
+            },
+          },
+        ],
       },
-      children: [
-        {
-          type: "div",
-          props: {
-            style: {
-              position: "absolute",
-              top: 0,
-              left: 0,
-              width: "480px",
-              height: "500px",
-              display: "flex",
-            },
-            children: [
-              {
-                type: "img",
-                props: {
-                  src: avatarUri,
-                  width: 480,
-                  height: 500,
-                  style: {
-                    width: "480px",
-                    height: "500px",
-                    objectFit: "cover",
-                  },
-                },
-              },
-              {
-                type: "div",
-                props: {
-                  style: {
-                    position: "absolute",
-                    top: 0,
-                    left: 0,
-                    width: "480px",
-                    height: "500px",
-                    background: "linear-gradient(to right, rgba(0,0,0,0) 30%, rgba(0,0,0,0.85) 80%, #000000 100%)",
-                  },
-                },
-              },
-            ],
-          },
+    };
+  } else if (layout === "modern-card") {
+    element = {
+      type: "div",
+      props: {
+        style: {
+          width: `${QUOTE_WIDTH}px`,
+          height: `${QUOTE_HEIGHT}px`,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          padding: "48px",
+          background: "radial-gradient(ellipse at 80% 90%, rgba(99, 102, 241, 0.2) 0%, transparent 60%), linear-gradient(135deg, #070913 0%, #0d1224 50%, #0a0e1c 100%)",
+          position: "relative",
         },
-        {
-          type: "div",
-          props: {
-            style: {
-              marginLeft: "450px",
-              flex: 1,
-              height: "500px",
-              display: "flex",
-              flexDirection: "column",
-              justifyContent: "center",
-              alignItems: "center",
-              padding: "0 40px",
-              zIndex: 3,
+        children: [
+          // Floating frosted card
+          {
+            type: "div",
+            props: {
+              style: {
+                width: "880px",
+                height: "380px",
+                borderRadius: "24px",
+                background: "rgba(255, 255, 255, 0.06)",
+                border: "1px solid rgba(255, 255, 255, 0.15)",
+                display: "flex",
+                flexDirection: "column",
+                justifyContent: "space-between",
+                padding: "32px",
+              },
+              children: [
+                // Header: Author & Tag
+                {
+                  type: "div",
+                  props: {
+                    style: {
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      borderBottom: "1px solid rgba(255, 255, 255, 0.1)",
+                      paddingBottom: "16px",
+                    },
+                    children: [
+                      {
+                        type: "div",
+                        props: {
+                          style: {
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "14px",
+                          },
+                          children: [
+                            {
+                              type: "img",
+                              props: {
+                                src: avatarUri,
+                                width: 56,
+                                height: 56,
+                                style: {
+                                  width: "56px",
+                                  height: "56px",
+                                  borderRadius: "16px",
+                                  border: "1px solid rgba(255, 255, 255, 0.2)",
+                                  objectFit: "cover",
+                                },
+                              },
+                            },
+                            {
+                              type: "div",
+                              props: {
+                                style: {
+                                  display: "flex",
+                                  flexDirection: "column",
+                                },
+                                children: [
+                                  {
+                                    type: "div",
+                                    props: {
+                                      style: {
+                                        fontSize: "20px",
+                                        fontWeight: 700,
+                                        color: "#ffffff",
+                                      },
+                                      children: data.author || "Author",
+                                    },
+                                  },
+                                  {
+                                    type: "div",
+                                    props: {
+                                      style: {
+                                        fontSize: "13px",
+                                        color: "#a5b4fc",
+                                      },
+                                      children: data.handle || "@handle",
+                                    },
+                                  },
+                                ],
+                              },
+                            },
+                          ],
+                        },
+                      },
+                      {
+                        type: "div",
+                        props: {
+                          style: {
+                            padding: "5px 14px",
+                            borderRadius: "999px",
+                            background: "rgba(99, 102, 241, 0.2)",
+                            border: "1px solid rgba(99, 102, 241, 0.4)",
+                            color: "#c7d2fe",
+                            fontSize: "12px",
+                            fontFamily: "monospace",
+                            fontWeight: 600,
+                            display: "flex",
+                          },
+                          children: data.tag || "QUOTE",
+                        },
+                      },
+                    ],
+                  },
+                },
+                // Middle Quote
+                {
+                  type: "div",
+                  props: {
+                    style: {
+                      fontSize: "28px",
+                      fontWeight: 500,
+                      lineHeight: "42px",
+                      color: "#f1f5f9",
+                      padding: "10px 0",
+                    },
+                    children: `“${data.quote || "Quote text"}”`,
+                  },
+                },
+                // Footer
+                {
+                  type: "div",
+                  props: {
+                    style: {
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      borderTop: "1px solid rgba(255, 255, 255, 0.1)",
+                      paddingTop: "14px",
+                      fontSize: "12px",
+                      color: "#94a3b8",
+                      fontFamily: "monospace",
+                    },
+                    children: [
+                      {
+                        type: "span",
+                        props: { children: "Image Studio Quote · Authenticated" },
+                      },
+                      {
+                        type: "span",
+                        props: {
+                          style: { color: "#818cf8" },
+                          children: data.tag || "Verified",
+                        },
+                      },
+                    ],
+                  },
+                },
+              ],
             },
-            children: [
-              {
-                type: "div",
-                props: {
-                  style: {
-                    color: "#ffffff",
-                    fontSize: "36px",
-                    lineHeight: "48px",
-                    textAlign: "center",
-                    fontWeight: 400,
-                    maxWidth: "460px",
-                  },
-                  children: data.quote || "Quote text",
-                },
-              },
-              {
-                type: "div",
-                props: {
-                  style: {
-                    color: "#ffffff",
-                    fontSize: "24px",
-                    fontStyle: "italic",
-                    marginTop: "24px",
-                    textAlign: "center",
-                  },
-                  children: `- ${data.author || "Author"}`,
-                },
-              },
-              {
-                type: "div",
-                props: {
-                  style: {
-                    color: "#9ca3af",
-                    fontSize: "17px",
-                    marginTop: "6px",
-                    textAlign: "center",
-                  },
-                  children: data.handle || "@handle",
-                },
-              },
-            ],
           },
+        ],
+      },
+    };
+  } else if (layout === "neon-cyber") {
+    element = {
+      type: "div",
+      props: {
+        style: {
+          width: `${QUOTE_WIDTH}px`,
+          height: `${QUOTE_HEIGHT}px`,
+          display: "flex",
+          flexDirection: "column",
+          justifyContent: "space-between",
+          padding: "36px",
+          background: "radial-gradient(circle at 10% 20%, rgba(56, 189, 248, 0.15) 0%, transparent 50%), radial-gradient(circle at 90% 80%, rgba(192, 132, 252, 0.15) 0%, transparent 50%), #040711",
+          border: "2px solid rgba(56, 189, 248, 0.6)",
+          borderRadius: "16px",
+          position: "relative",
         },
-        {
-          type: "div",
-          props: {
-            style: {
-              position: "absolute",
-              bottom: "16px",
-              right: "24px",
-              color: "#4b5563",
-              fontSize: "14px",
-              fontFamily: "monospace",
-              zIndex: 4,
+        children: [
+          // Top Cyber Status Bar
+          {
+            type: "div",
+            props: {
+              style: {
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                borderBottom: "1px solid rgba(56, 189, 248, 0.3)",
+                paddingBottom: "12px",
+                fontSize: "12px",
+                fontFamily: "monospace",
+              },
+              children: [
+                {
+                  type: "div",
+                  props: {
+                    style: {
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "8px",
+                      color: "#38bdf8",
+                    },
+                    children: [
+                      {
+                        type: "div",
+                        props: {
+                          style: {
+                            width: "8px",
+                            height: "8px",
+                            borderRadius: "999px",
+                            background: "#38bdf8",
+                          },
+                        },
+                      },
+                      {
+                        type: "span",
+                        props: { children: "TERMINAL_SPEECH // STREAM_ACTIVE" },
+                      },
+                    ],
+                  },
+                },
+                {
+                  type: "span",
+                  props: {
+                    style: { color: "#f472b6", letterSpacing: "2px" },
+                    children: data.tag || "CYBER_ID",
+                  },
+                },
+              ],
             },
-            children: data.tag || "Ziji#9575",
           },
+          // Middle Row: Cyber Avatar + Quote
+          {
+            type: "div",
+            props: {
+              style: {
+                display: "flex",
+                alignItems: "center",
+                gap: "30px",
+                padding: "16px 0",
+              },
+              children: [
+                {
+                  type: "div",
+                  props: {
+                    style: {
+                      width: "140px",
+                      height: "140px",
+                      borderRadius: "14px",
+                      border: "2px solid #38bdf8",
+                      padding: "4px",
+                      background: "rgba(0, 0, 0, 0.6)",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      flexShrink: 0,
+                    },
+                    children: [
+                      {
+                        type: "img",
+                        props: {
+                          src: avatarUri,
+                          width: 128,
+                          height: 128,
+                          style: {
+                            width: "128px",
+                            height: "128px",
+                            borderRadius: "10px",
+                            objectFit: "cover",
+                          },
+                        },
+                      },
+                    ],
+                  },
+                },
+                {
+                  type: "div",
+                  props: {
+                    style: {
+                      flex: 1,
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: "8px",
+                    },
+                    children: [
+                      {
+                        type: "div",
+                        props: {
+                          style: {
+                            fontSize: "12px",
+                            color: "rgba(56, 189, 248, 0.8)",
+                            fontFamily: "monospace",
+                          },
+                          children: "> INPUT_LOG_PROMPT:",
+                        },
+                      },
+                      {
+                        type: "div",
+                        props: {
+                          style: {
+                            fontSize: "27px",
+                            fontWeight: 600,
+                            lineHeight: "38px",
+                            color: "#ffffff",
+                          },
+                          children: `"${data.quote || "Quote text"}"`,
+                        },
+                      },
+                      {
+                        type: "div",
+                        props: {
+                          style: {
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "12px",
+                            paddingTop: "6px",
+                            fontFamily: "monospace",
+                          },
+                          children: [
+                            {
+                              type: "span",
+                              props: {
+                                style: { fontSize: "17px", fontWeight: 700, color: "#67e8f9" },
+                                children: `// ${data.author || "Author"}`,
+                              },
+                            },
+                            {
+                              type: "span",
+                              props: {
+                                style: { fontSize: "12px", color: "#f472b6" },
+                                children: data.handle || "@handle",
+                              },
+                            },
+                          ],
+                        },
+                      },
+                    ],
+                  },
+                },
+              ],
+            },
+          },
+          // Bottom Equalizer Bars & Telemetry
+          {
+            type: "div",
+            props: {
+              style: {
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                borderTop: "1px solid rgba(56, 189, 248, 0.3)",
+                paddingTop: "12px",
+                fontSize: "11px",
+                fontFamily: "monospace",
+                color: "rgba(56, 189, 248, 0.7)",
+              },
+              children: [
+                {
+                  type: "div",
+                  props: {
+                    style: { display: "flex", alignItems: "flex-end", gap: "3px", height: "24px" },
+                    children: [12, 18, 8, 22, 14, 24, 10, 16, 20, 12, 18, 9, 22, 15, 24].map((h, i) => ({
+                      type: "div",
+                      props: {
+                        key: i,
+                        style: {
+                          width: "4px",
+                          height: `${h}px`,
+                          background: "#38bdf8",
+                          borderRadius: "1px",
+                        },
+                      },
+                    })),
+                  },
+                },
+                {
+                  type: "span",
+                  props: { children: "BUFFER: 100% OK · HIGH RESOLUTION" },
+                },
+              ],
+            },
+          },
+        ],
+      },
+    };
+  } else {
+    // 1. Split Cinema (Original)
+    element = {
+      type: "div",
+      props: {
+        style: {
+          width: `${QUOTE_WIDTH}px`,
+          height: `${QUOTE_HEIGHT}px`,
+          display: "flex",
+          background: "#000000",
+          position: "relative",
+          overflow: "hidden",
         },
-      ],
-    },
-  };
+        children: [
+          {
+            type: "div",
+            props: {
+              style: {
+                position: "absolute",
+                top: 0,
+                left: 0,
+                width: "480px",
+                height: "500px",
+                display: "flex",
+              },
+              children: [
+                {
+                  type: "img",
+                  props: {
+                    src: avatarUri,
+                    width: 480,
+                    height: 500,
+                    style: {
+                      width: "480px",
+                      height: "500px",
+                      objectFit: "cover",
+                    },
+                  },
+                },
+                {
+                  type: "div",
+                  props: {
+                    style: {
+                      position: "absolute",
+                      top: 0,
+                      left: 0,
+                      width: "480px",
+                      height: "500px",
+                      background: "linear-gradient(to right, rgba(0,0,0,0) 30%, rgba(0,0,0,0.85) 80%, #000000 100%)",
+                    },
+                  },
+                },
+              ],
+            },
+          },
+          {
+            type: "div",
+            props: {
+              style: {
+                marginLeft: "450px",
+                flex: 1,
+                height: "500px",
+                display: "flex",
+                flexDirection: "column",
+                justifyContent: "center",
+                alignItems: "center",
+                padding: "0 40px",
+                zIndex: 3,
+              },
+              children: [
+                {
+                  type: "div",
+                  props: {
+                    style: {
+                      color: "#ffffff",
+                      fontSize: "36px",
+                      lineHeight: "48px",
+                      textAlign: "center",
+                      fontWeight: 400,
+                      maxWidth: "460px",
+                    },
+                    children: data.quote || "Quote text",
+                  },
+                },
+                {
+                  type: "div",
+                  props: {
+                    style: {
+                      color: "#ffffff",
+                      fontSize: "24px",
+                      fontStyle: "italic",
+                      marginTop: "24px",
+                      textAlign: "center",
+                    },
+                    children: `- ${data.author || "Author"}`,
+                  },
+                },
+                {
+                  type: "div",
+                  props: {
+                    style: {
+                      color: "#9ca3af",
+                      fontSize: "17px",
+                      marginTop: "6px",
+                      textAlign: "center",
+                    },
+                    children: data.handle || "@handle",
+                  },
+                },
+              ],
+            },
+          },
+          {
+            type: "div",
+            props: {
+              style: {
+                position: "absolute",
+                bottom: "16px",
+                right: "24px",
+                color: "#4b5563",
+                fontSize: "14px",
+                fontFamily: "monospace",
+                zIndex: 4,
+              },
+              children: data.tag || "Ziji#9575",
+            },
+          },
+        ],
+      },
+    };
+  }
 
   const fonts = loadFonts();
   const svg = await satori(element as any, {

@@ -114,7 +114,40 @@ export function LeaderboardForm({
 
       {tab === "visual" ? (
         <div className="space-y-4">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          {/* Layout Selector */}
+          <div>
+            <label className="text-xs font-semibold text-amber-300">Bố Cục / Layout Bảng Xếp Hạng</label>
+            <div className="mt-1.5 grid grid-cols-3 gap-2">
+              {[
+                { id: "podium", name: "🏆 3D Podium", desc: "Top 3 bục vinh quang" },
+                { id: "compact-list", name: "📋 Danh Sách Gọn", desc: "Huy hiệu 🥇🥈🥉" },
+                { id: "cyber-grid", name: "⚡ Cyber Grid", desc: "2 Cột đấu Cyberpunk" },
+              ].map((l) => {
+                const isSelected = (data.layout || "podium") === l.id;
+                return (
+                  <button
+                    key={l.id}
+                    type="button"
+                    onClick={() => {
+                      const next = { ...data, layout: l.id as any };
+                      onChange(next);
+                      syncJson(next);
+                    }}
+                    className={`flex flex-col items-center justify-center rounded-xl border p-2 text-center transition-all ${
+                      isSelected
+                        ? "border-amber-400 bg-amber-950/60 shadow-md ring-2 ring-amber-400/50"
+                        : "border-white/10 bg-black/40 hover:border-white/20 hover:bg-white/5"
+                    }`}
+                  >
+                    <span className="text-xs font-bold text-white">{l.name}</span>
+                    <span className="text-[10px] text-slate-400 mt-0.5">{l.desc}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div>
               <label className="text-xs font-semibold text-amber-300">Server / Guild Name</label>
               <input
@@ -130,7 +163,21 @@ export function LeaderboardForm({
               />
             </div>
             <div>
-              <label className="text-xs font-semibold text-amber-300">Guild / Server Icon URL</label>
+              <label className="text-xs font-semibold text-amber-300">Season / Subtitle</label>
+              <input
+                type="text"
+                value={data.season || ""}
+                onChange={(e) => {
+                  const next = { ...data, season: e.target.value };
+                  onChange(next);
+                  syncJson(next);
+                }}
+                placeholder="e.g. SEASON 1"
+                className="mt-1 w-full rounded-xl border border-white/10 bg-black/40 px-3.5 py-2 text-xs text-white focus:border-amber-500 focus:outline-none"
+              />
+            </div>
+            <div>
+              <label className="text-xs font-semibold text-amber-300">Guild Icon URL</label>
               <input
                 type="url"
                 value={data.guildIcon}
