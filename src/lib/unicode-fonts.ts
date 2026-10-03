@@ -76,7 +76,7 @@ type FontSource = {
   requestText?: string;
 };
 
-const fontCache = new Map<string, Promise<SatoriFont[] | null>>();
+const fontCache = new Map<string, Promise<SatoriFont[]>>();
 
 // Google Fonts separates Vietnamese into its own glyph set. Include the full
 // Vietnamese alphabet/marks in the request so a tiny segment such as `ỳ`,
@@ -146,8 +146,8 @@ async function loadGoogleFont(family: string, text: string): Promise<Buffer> {
 export async function loadSatoriAdditionalAsset(
   languageCode: string,
   text: string,
-): Promise<SatoriFont[] | null> {
-  if (!text || languageCode === "emoji") return null;
+): Promise<SatoriFont[]> {
+  if (!text || languageCode === "emoji") return [];
 
   const sources: FontSource[] = [];
   const seen = new Set<string>();
@@ -182,7 +182,7 @@ export async function loadSatoriAdditionalAsset(
     addSource("vi-VN", "Noto Sans", `${VIETNAMESE_GLYPHS} ${text}`);
   }
 
-  if (!sources.length) return null;
+  if (!sources.length) return [];
 
   const cacheKey = sources
     .map(({ language, family, requestText }) => `${language}:${family}:${requestText}`)
@@ -226,7 +226,7 @@ export async function loadSatoriAdditionalAsset(
         `[unicode-fonts] Failed to load dynamic font for ${JSON.stringify(text)} (${languageCode}):`,
         error,
       );
-      return null;
+      return [];
     });
 
   fontCache.set(cacheKey, pending);

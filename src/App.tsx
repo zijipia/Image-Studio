@@ -24,6 +24,7 @@ import { LeaderboardPreview } from "./components/LeaderboardPreview";
 import { QuoteForm } from "./components/QuoteForm";
 import { QuotePreview } from "./components/QuotePreview";
 import { CustomBuilder } from "./components/CustomBuilder";
+import { AnimationTimeline } from "./components/AnimationTimeline";
 import {
   Music,
   User,
@@ -37,10 +38,19 @@ import {
   Code2,
   Zap,
   Palette,
+  Film,
 } from "lucide-react";
 
 export default function App() {
-  const [activeMode, setActiveMode] = useState<GeneratorType>("song");
+  const [activeMode, setActiveMode] = useState<GeneratorType>(() => {
+    if (typeof window !== "undefined") {
+      const p = new URLSearchParams(window.location.search);
+      if (p.get("studio") === "animation" || p.get("mode") === "animated") {
+        return "animated";
+      }
+    }
+    return "song";
+  });
 
   // State for all generators
   const [songTitle, setSongTitle] = useState<string>("Trending Top Hits");
@@ -207,6 +217,13 @@ export default function App() {
             Custom Studio
           </button>
           <button
+            onClick={() => setActiveMode("animated")}
+            className={`flex items-center gap-1.5 transition-colors ${activeMode === "animated" ? "text-fuchsia-400 font-semibold" : "hover:text-fuchsia-300"}`}
+          >
+            <Film className="h-3.5 w-3.5" />
+            <span>Animation Studio</span>
+          </button>
+          <button
             onClick={() => setShowDocs(true)}
             className="hover:text-slate-100 transition-colors opacity-80"
           >
@@ -311,6 +328,24 @@ export default function App() {
                 <Palette className="h-4 w-4" />
                 <span>Custom Studio</span>
               </button>
+
+              <button
+                onClick={() => {
+                  setActiveMode("animated");
+                  setLastBlob(null);
+                }}
+                className={`flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-medium transition-all ${
+                  activeMode === "animated"
+                    ? "bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-md shadow-purple-900/40 font-semibold"
+                    : "text-slate-400 hover:text-white hover:bg-white/5"
+                }`}
+              >
+                <Film className="h-4 w-4 text-purple-400" />
+                <span>Animation Studio</span>
+                <span className="rounded bg-purple-500/25 px-1.5 py-0.5 text-[9px] font-bold uppercase text-purple-200 border border-purple-400/30">
+                  GIF/WebP
+                </span>
+              </button>
             </div>
 
             <div className="flex items-center gap-2">
@@ -325,7 +360,7 @@ export default function App() {
           </div>
 
           {/* Mode 1-4: Dual Panel Grid (Song, Profile, Leaderboard, Quote) */}
-          {activeMode !== "custom" && (
+          {activeMode !== "custom" && activeMode !== "animated" && (
             <div className="grid grid-cols-1 gap-8 lg:grid-cols-[480px_1fr] xl:grid-cols-[540px_1fr]">
               <div className="rounded-2xl border border-white/10 bg-[#0e0a1e]/80 p-5 shadow-xl backdrop-blur-md">
                 {activeMode === "song" && (
@@ -421,6 +456,11 @@ export default function App() {
               isGenerating={isGenerating}
               lastGeneratedBlob={lastBlob}
             />
+          )}
+
+          {/* Mode 6: Animation Studio */}
+          {activeMode === "animated" && (
+            <AnimationTimeline />
           )}
         </div>
       </main>

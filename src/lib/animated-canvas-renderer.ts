@@ -1,14 +1,14 @@
 import fs from "fs";
 import path from "path";
 import satori from "satori";
-import sharp from "sharp";
+import sharp, { type Metadata } from "sharp";
 import type { CustomCanvasData, CustomElement } from "./types.js";
 import { imageToDataUri } from "./image-generator.js";
 import { loadSatoriAdditionalAsset } from "./unicode-fonts.js";
 
 let fonts: Array<{ name: string; data: Buffer; weight: 400 | 500; style: "normal" }> | null = null;
 const animatedSourceCache = new Map<string, Promise<Buffer>>();
-const animatedMetadataCache = new Map<string, Promise<sharp.Metadata>>();
+const animatedMetadataCache = new Map<string, Promise<Metadata>>();
 
 function loadFonts() {
   if (fonts) return fonts;
@@ -55,7 +55,7 @@ async function animatedImageToDataUri(url: string, timeMs: number, targetWidth: 
   let page = 0;
   const delays = metadata.delay ?? [];
   if (pages > 1 && delays.length) {
-    const total = delays.reduce((sum, value) => sum + value, 0) || pages * 100;
+    const total = delays.reduce((sum: number, value: number) => sum + value, 0) || pages * 100;
     let cursor = ((timeMs % total) + total) % total;
     for (let i = 0; i < pages; i++) {
       const delay = delays[i] ?? 100;
