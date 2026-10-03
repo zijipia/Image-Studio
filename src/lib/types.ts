@@ -1,11 +1,11 @@
-export type GeneratorType = "song" | "profile" | "leaderboard" | "quote" | "custom" | "animated";
+export type GeneratorType = "song" | "profile" | "leaderboard" | "quote" | "animated";
 
 export interface SongResult { index: number; avatar: string; displayName: string; time: string; source: string; author?: string; views?: string; }
 export interface SongGenerateRequest { type?: "song"; title: string; items: SongResult[]; layout?: "auto" | "list" | "grid" | "classic"; }
 export interface ProfileData { username: string; balance: string; avatar: string; level: number; currentXp: number; requiredXp: number; rank: string; theme?: "ruby-poly" | "purple-glow" | "midnight-blue" | "dark-slate"; }
 export interface ProfileGenerateRequest { type: "profile"; data: ProfileData; }
 export interface LeaderboardItem { rank: number; username: string; handle: string; avatar: string; level: number; xp: number; }
-export interface LeaderboardData { guildIcon: string; items: LeaderboardItem[]; }
+export interface LeaderboardData { guildIcon: string; guildName?: string; items: LeaderboardItem[]; }
 export interface LeaderboardGenerateRequest { type: "leaderboard"; data: LeaderboardData; }
 export interface QuoteData { quote: string; author: string; handle: string; tag: string; avatar: string; }
 export interface QuoteGenerateRequest { type: "quote"; data: QuoteData; }
@@ -34,7 +34,7 @@ export interface CustomCanvasData {
 }
 export interface CustomGenerateRequest { type: "custom"; data: CustomCanvasData; }
 
-export type AnimatedImageFormat = "gif" | "webp";
+export type AnimatedImageFormat = "gif" | "webp" | "png";
 
 export interface KeyframeData {
   id?: string;
@@ -56,6 +56,11 @@ export interface AnimatedGenerateData {
   title: string;
   format?: AnimatedImageFormat;
   loop?: number;
+
+  /** Target a single frame index for PNG output (0-indexed) */
+  frameIndex?: number;
+  /** Target a specific timestamp in milliseconds for PNG output */
+  frameTime?: number;
 
   // Format A: Baked frames (classic format)
   frames?: CustomCanvasData[];

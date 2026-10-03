@@ -34,26 +34,17 @@ import {
   RefreshCw,
   FileJson,
   Terminal,
+  Camera,
 } from "lucide-react";
 
-export type KeyframeProperty = "x" | "y" | "width" | "height" | "opacity";
-export type EasingType = "ease-in-out" | "linear" | "ease-in" | "ease-out" | "bounce";
+import type {
+  KeyframeProperty,
+  EasingType,
+  Keyframe,
+  Track,
+} from "../lib/timeline-interpolator";
 
-export interface Keyframe {
-  id: string;
-  time: number;
-  easing?: EasingType;
-  x?: number;
-  y?: number;
-  width?: number;
-  height?: number;
-  opacity?: number;
-}
-
-export interface Track {
-  elementId: string;
-  keyframes: Keyframe[];
-}
+export type { KeyframeProperty, EasingType, Keyframe, Track };
 
 const clamp = (v: number, min: number, max: number) => Math.max(min, Math.min(max, v));
 const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
@@ -81,12 +72,13 @@ function applyEasing(t: number, easing: EasingType = "ease-in-out"): number {
   }
 }
 
-// Default template variables
-export const DEFAULT_TEMPLATE_VARIABLES: Record<string, string> = {
-  userAVTurl: "https://github.com/user-attachments/assets/ebbf178f-a0af-468c-bc6d-34f0502f30a8",
-  userName: "ziji",
-  guildName: "Hội Vô Danh 2",
-};
+import {
+  PRESETS,
+  DEFAULT_TEMPLATE_VARIABLES,
+  type AnimationPreset,
+} from "../lib/animation-presets";
+
+export { DEFAULT_TEMPLATE_VARIABLES };
 
 /**
  * Replace any {varName} in a string with the corresponding value from vars
@@ -212,321 +204,7 @@ function ColorPalettePicker({
   );
 }
 
-interface AnimationPreset {
-  id: string;
-  name: string;
-  description: string;
-  duration: number;
-  fps: number;
-  canvas: CustomCanvasData;
-  tracks: Track[];
-}
 
-const PRESETS: AnimationPreset[] = [
-  {
-    id: "welcome",
-    name: "Welcome Card",
-    description: "Avatar pop-in với biến {userName} và {guildName}",
-    duration: 1500,
-    fps: 12,
-    canvas: {
-      title: "Welcome Card",
-      width: 930,
-      height: 280,
-      background: "linear-gradient(135deg, #090614 0%, #1e1035 50%, #4a1d6e 100%)",
-      elements: [
-        {
-          id: "avatar",
-          type: "avatar",
-          x: 36,
-          y: 40,
-          width: 140,
-          height: 140,
-          imageUrl: "{userAVTurl}",
-          borderRadius: 999,
-          border: "4px solid rgba(168, 85, 247, 0.6)",
-        },
-        {
-          id: "title",
-          type: "text",
-          x: 205,
-          y: 55,
-          width: 650,
-          height: 52,
-          content: "Welcome, {userName}!",
-          color: "#ffffff",
-          fontSize: 44,
-          fontWeight: 700,
-          textShadow: "0 0 16px rgba(192, 132, 252, 0.75), 2px 3px 6px rgba(0, 0, 0, 0.9)",
-          shadowEnabled: true,
-          shadowOffsetX: 2,
-          shadowOffsetY: 3,
-          shadowBlur: 6,
-          shadowColor: "rgba(0, 0, 0, 0.9)",
-          glowEnabled: true,
-          glowBlur: 16,
-          glowColor: "#c084fc",
-          glowIntensity: "medium",
-        },
-        {
-          id: "subtitle",
-          type: "text",
-          x: 205,
-          y: 115,
-          width: 650,
-          height: 38,
-          content: "Joined {guildName} · Ready for battle",
-          color: "#c084fc",
-          fontSize: 24,
-          fontWeight: 500,
-          textShadow: "1px 2px 4px rgba(0, 0, 0, 0.8)",
-          shadowEnabled: true,
-          shadowOffsetX: 1,
-          shadowOffsetY: 2,
-          shadowBlur: 4,
-          shadowColor: "rgba(0, 0, 0, 0.8)",
-        },
-        {
-          id: "badge",
-          type: "badge",
-          x: 205,
-          y: 175,
-          width: 130,
-          height: 32,
-          content: "✦ NEW MEMBER",
-          color: "#ffffff",
-          backgroundColor: "#7e22ce",
-          borderRadius: 8,
-          fontSize: 13,
-          textShadow: "0 0 8px rgba(255, 255, 255, 0.5)",
-        },
-      ],
-    },
-    tracks: [
-      {
-        elementId: "avatar",
-        keyframes: [
-          { id: "av-0", time: 0, x: 20, y: 40, width: 110, height: 110, opacity: 0, easing: "bounce" },
-          { id: "av-1", time: 500, x: 36, y: 40, width: 140, height: 140, opacity: 1, easing: "ease-in-out" },
-        ],
-      },
-      {
-        elementId: "title",
-        keyframes: [
-          { id: "ti-0", time: 200, x: 160, y: 55, width: 650, height: 52, opacity: 0, easing: "ease-out" },
-          { id: "ti-1", time: 650, x: 205, y: 55, width: 650, height: 52, opacity: 1, easing: "ease-in-out" },
-        ],
-      },
-      {
-        elementId: "subtitle",
-        keyframes: [
-          { id: "sub-0", time: 400, x: 170, y: 115, width: 650, height: 38, opacity: 0, easing: "ease-out" },
-          { id: "sub-1", time: 850, x: 205, y: 115, width: 650, height: 38, opacity: 1, easing: "ease-in-out" },
-        ],
-      },
-      {
-        elementId: "badge",
-        keyframes: [
-          { id: "bd-0", time: 600, x: 205, y: 195, width: 130, height: 32, opacity: 0, easing: "bounce" },
-          { id: "bd-1", time: 1050, x: 205, y: 175, width: 130, height: 32, opacity: 1, easing: "ease-in-out" },
-        ],
-      },
-    ],
-  },
-  {
-    id: "music",
-    name: "Now Playing Wave",
-    description: "Album art pulse and equalizer animation",
-    duration: 1600,
-    fps: 12,
-    canvas: {
-      title: "Now Playing Card",
-      width: 930,
-      height: 280,
-      background: "linear-gradient(135deg, #0b0f19 0%, #111827 50%, #064e3b 100%)",
-      elements: [
-        {
-          id: "album",
-          type: "image",
-          x: 40,
-          y: 40,
-          width: 140,
-          height: 140,
-          imageUrl: "{userAVTurl}",
-          borderRadius: 20,
-          border: "2px solid rgba(52, 211, 153, 0.4)",
-        },
-        {
-          id: "track-title",
-          type: "text",
-          x: 215,
-          y: 50,
-          width: 600,
-          height: 48,
-          content: "Midnight City Lights",
-          color: "#ffffff",
-          fontSize: 40,
-          fontWeight: 700,
-          textShadow: "0 0 16px rgba(52, 211, 153, 0.7), 2px 3px 6px rgba(0, 0, 0, 0.85)",
-          shadowEnabled: true,
-          shadowOffsetX: 2,
-          shadowOffsetY: 3,
-          shadowBlur: 6,
-          shadowColor: "rgba(0, 0, 0, 0.85)",
-          glowEnabled: true,
-          glowBlur: 16,
-          glowColor: "#34d399",
-          glowIntensity: "medium",
-        },
-        {
-          id: "artist",
-          type: "text",
-          x: 215,
-          y: 108,
-          width: 600,
-          height: 32,
-          content: "DJ {userName} · {guildName}",
-          color: "#6ee7b7",
-          fontSize: 22,
-          fontWeight: 500,
-          textShadow: "1px 2px 4px rgba(0, 0, 0, 0.7)",
-          shadowEnabled: true,
-          shadowOffsetX: 1,
-          shadowOffsetY: 2,
-          shadowBlur: 4,
-          shadowColor: "rgba(0, 0, 0, 0.7)",
-        },
-        {
-          id: "progress",
-          type: "progress",
-          x: 215,
-          y: 165,
-          width: 580,
-          height: 14,
-          backgroundColor: "rgba(255,255,255,0.1)",
-          progressColor: "#10b981",
-          progressPercent: 35,
-          borderRadius: 999,
-        },
-      ],
-    },
-    tracks: [
-      {
-        elementId: "album",
-        keyframes: [
-          { id: "alb-0", time: 0, x: 40, y: 40, width: 140, height: 140, opacity: 1, easing: "ease-in-out" },
-          { id: "alb-1", time: 800, x: 38, y: 38, width: 144, height: 144, opacity: 1, easing: "ease-in-out" },
-          { id: "alb-2", time: 1600, x: 40, y: 40, width: 140, height: 140, opacity: 1, easing: "ease-in-out" },
-        ],
-      },
-      {
-        elementId: "progress",
-        keyframes: [
-          { id: "prg-0", time: 0, width: 580, height: 14, opacity: 1, easing: "linear" },
-          { id: "prg-1", time: 1600, width: 580, height: 14, opacity: 1, easing: "linear" },
-        ],
-      },
-    ],
-  },
-  {
-    id: "rank-up",
-    name: "Rank Up / XP",
-    description: "Level progression and glowing badge pop",
-    duration: 1400,
-    fps: 12,
-    canvas: {
-      title: "Level Up Banner",
-      width: 930,
-      height: 280,
-      background: "linear-gradient(135deg, #180d04 0%, #381907 50%, #7c2d12 100%)",
-      elements: [
-        {
-          id: "rank-badge",
-          type: "badge",
-          x: 45,
-          y: 45,
-          width: 130,
-          height: 130,
-          content: "LV. 50",
-          color: "#fef08a",
-          backgroundColor: "#b45309",
-          borderRadius: 30,
-          fontSize: 32,
-          border: "3px solid #f59e0b",
-          textShadow: "0 0 10px rgba(254, 240, 138, 0.7)",
-        },
-        {
-          id: "rank-title",
-          type: "text",
-          x: 210,
-          y: 50,
-          width: 600,
-          height: 48,
-          content: "LEVEL UP: {userName}!",
-          color: "#fbbf24",
-          fontSize: 38,
-          fontWeight: 800,
-          textShadow: "0 0 18px rgba(251, 191, 36, 0.8), 2px 3px 6px rgba(0, 0, 0, 0.95)",
-          shadowEnabled: true,
-          shadowOffsetX: 2,
-          shadowOffsetY: 3,
-          shadowBlur: 6,
-          shadowColor: "rgba(0, 0, 0, 0.95)",
-          glowEnabled: true,
-          glowBlur: 18,
-          glowColor: "#facc15",
-          glowIntensity: "medium",
-        },
-        {
-          id: "rank-sub",
-          type: "text",
-          x: 210,
-          y: 110,
-          width: 600,
-          height: 32,
-          content: "XP: 14,850 / 15,000 · {guildName}",
-          color: "#fed7aa",
-          fontSize: 22,
-          fontWeight: 500,
-          textShadow: "1px 2px 4px rgba(0, 0, 0, 0.8)",
-          shadowEnabled: true,
-          shadowOffsetX: 1,
-          shadowOffsetY: 2,
-          shadowBlur: 4,
-          shadowColor: "rgba(0, 0, 0, 0.8)",
-        },
-        {
-          id: "xp-bar",
-          type: "progress",
-          x: 210,
-          y: 165,
-          width: 620,
-          height: 18,
-          backgroundColor: "rgba(0,0,0,0.4)",
-          progressColor: "#f59e0b",
-          progressPercent: 20,
-          borderRadius: 999,
-        },
-      ],
-    },
-    tracks: [
-      {
-        elementId: "rank-badge",
-        keyframes: [
-          { id: "rb-0", time: 0, x: 45, y: 45, width: 90, height: 90, opacity: 0, easing: "bounce" },
-          { id: "rb-1", time: 600, x: 45, y: 45, width: 130, height: 130, opacity: 1, easing: "ease-in-out" },
-        ],
-      },
-      {
-        elementId: "rank-title",
-        keyframes: [
-          { id: "rt-0", time: 200, x: 180, y: 50, opacity: 0, easing: "ease-out" },
-          { id: "rt-1", time: 700, x: 210, y: 50, opacity: 1, easing: "ease-in-out" },
-        ],
-      },
-    ],
-  },
-];
 
 function propertyValue(
   track: Track | undefined,
@@ -600,6 +278,7 @@ export function AnimationTimeline() {
   const [selectedId, setSelectedId] = useState<string>("title");
   const [selectedKeyframeId, setSelectedKeyframeId] = useState<string | null>(null);
   const [exporting, setExporting] = useState<boolean>(false);
+  const [exportingFrame, setExportingFrame] = useState<boolean>(false);
   const [exportProgress, setExportProgress] = useState<string>("");
   const [exportError, setExportError] = useState<string | null>(null);
   const [zoom, setZoom] = useState<number>(0.75);
@@ -612,9 +291,10 @@ export function AnimationTimeline() {
   const [newVarKey, setNewVarKey] = useState<string>("");
   const [newVarValue, setNewVarValue] = useState<string>("");
 
-  // API Payload modal state (unparsed vs parsed and editable)
+  // API Payload modal state (unparsed vs parsed, animation vs frame-png)
   const [showApiPayloadModal, setShowApiPayloadModal] = useState<boolean>(false);
   const [payloadMode, setPayloadMode] = useState<"unparsed" | "parsed">("unparsed");
+  const [payloadTarget, setPayloadTarget] = useState<"animation" | "frame-png">("animation");
   const [editablePayloadJson, setEditablePayloadJson] = useState<string>("");
   const [copiedJson, setCopiedJson] = useState<boolean>(false);
   const [copiedCurl, setCopiedCurl] = useState<boolean>(false);
@@ -905,7 +585,7 @@ export function AnimationTimeline() {
             ...trk,
             keyframes: [...(trk.keyframes || []), newKf].sort((a, b) => a.time - b.time),
           }));
-          setSelectedKeyframeId(newKf.id);
+          setSelectedKeyframeId(newKf.id ?? null);
         }
       }
     },
@@ -1206,9 +886,95 @@ export function AnimationTimeline() {
     }
   };
 
+  // Export Single PNG Frame at current playhead time
+  const exportCurrentFramePng = async () => {
+    setExportError(null);
+    setExportingFrame(true);
+    const roundedTime = Math.round(time);
+    setExportProgress(`Compiling PNG frame at ${roundedTime}ms on server...`);
+    try {
+      const cleanTracks = tracks
+        .filter((t) => t.keyframes && t.keyframes.length > 0)
+        .map((t) => ({
+          elementId: t.elementId,
+          keyframes: t.keyframes.map((k) => {
+            const kf: any = { time: Math.round(k.time) };
+            if (k.easing && k.easing !== "ease-in-out") kf.easing = k.easing;
+            if (k.x !== undefined) kf.x = Math.round(k.x);
+            if (k.y !== undefined) kf.y = Math.round(k.y);
+            if (k.width !== undefined) kf.width = Math.round(k.width);
+            if (k.height !== undefined) kf.height = Math.round(k.height);
+            if (k.opacity !== undefined) kf.opacity = Number(k.opacity.toFixed(3));
+            return kf;
+          }),
+        }));
+
+      const payload = {
+        type: "animated",
+        data: {
+          title: parseTemplateString(canvas.title, variables),
+          format: "png",
+          frameTime: roundedTime,
+          canvas,
+          tracks: cleanTracks,
+          templateVariables: variables,
+        },
+      };
+
+      const r = await fetch("/api/generate", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "image/png",
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (!r.ok) {
+        const text = await r.text();
+        let message = text;
+        try {
+          message = JSON.parse(text).error || text;
+        } catch {}
+        throw new Error(message || `Frame generation failed (${r.status})`);
+      }
+
+      setExportProgress("Downloading rendered PNG frame...");
+      const blob = await r.blob();
+      if (!blob.size) throw new Error("The server returned an empty file.");
+
+      const headerTotal = r.headers.get("X-Total-Generated");
+      recordGeneratedImage(headerTotal ? parseInt(headerTotal, 10) : undefined);
+
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      const safeName =
+        (parseTemplateString(canvas.title, variables) || "animation-frame")
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, "-")
+          .replace(/^-+|-+$/g, "") || "animation-frame";
+      a.href = url;
+      a.download = `${safeName}-${roundedTime}ms.png`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 5000);
+    } catch (error) {
+      setExportError(error instanceof Error ? error.message : String(error));
+      console.error("[Animation Studio] Frame PNG export failed:", error);
+    } finally {
+      setExportingFrame(false);
+      setExportProgress("");
+    }
+  };
+
   const generatePayload = useCallback(
-    (mode: "unparsed" | "parsed") => {
+    (
+      mode: "unparsed" | "parsed",
+      target: "animation" | "frame-png" = payloadTarget
+    ) => {
       const isParsed = mode === "parsed";
+      const isFrame = target === "frame-png";
 
       // Super Compact Keyframes Format exclusively (~98% smaller payload)
       const payloadCanvas = isParsed
@@ -1246,10 +1012,10 @@ export function AnimationTimeline() {
         type: "animated",
         data: {
           title: isParsed ? parseTemplateString(canvas.title, variables) : canvas.title,
-          format,
-          duration,
-          fps,
-          loop: 0,
+          format: isFrame ? "png" : format,
+          ...(isFrame
+            ? { frameTime: Math.round(time) }
+            : { duration, fps, loop: 0 }),
           canvas: payloadCanvas,
           tracks: cleanTracks,
         },
@@ -1261,18 +1027,27 @@ export function AnimationTimeline() {
 
       return JSON.stringify(payloadObj, null, 2);
     },
-    [canvas, tracks, duration, fps, format, variables]
+    [canvas, tracks, duration, fps, format, variables, payloadTarget, time]
   );
 
-  const openApiPayloadModal = (initialMode: "unparsed" | "parsed" = payloadMode) => {
+  const openApiPayloadModal = (
+    initialMode: "unparsed" | "parsed" = payloadMode,
+    target: "animation" | "frame-png" = payloadTarget
+  ) => {
     setPayloadMode(initialMode);
-    setEditablePayloadJson(generatePayload(initialMode));
+    setPayloadTarget(target);
+    setEditablePayloadJson(generatePayload(initialMode, target));
     setShowApiPayloadModal(true);
   };
 
   const handleSwitchPayloadMode = (newMode: "unparsed" | "parsed") => {
     setPayloadMode(newMode);
-    setEditablePayloadJson(generatePayload(newMode));
+    setEditablePayloadJson(generatePayload(newMode, payloadTarget));
+  };
+
+  const handleSwitchPayloadTarget = (newTarget: "animation" | "frame-png") => {
+    setPayloadTarget(newTarget);
+    setEditablePayloadJson(generatePayload(payloadMode, newTarget));
   };
 
   const handleCopyJson = async () => {
@@ -1286,8 +1061,11 @@ export function AnimationTimeline() {
     try {
       safeJson = JSON.stringify(JSON.parse(editablePayloadJson));
     } catch {}
-    const mime = format === "gif" ? "image/gif" : "image/webp";
-    const curl = `curl -X POST http://localhost:3000/api/generate \\\n  -H "Content-Type: application/json" \\\n  -H "Accept: ${mime}" \\\n  -d '${safeJson.replace(/'/g, "'\\''")}' \\\n  --output animation.${format}`;
+    const isFrame = payloadTarget === "frame-png";
+    const mime = isFrame ? "image/png" : format === "gif" ? "image/gif" : "image/webp";
+    const endpoint = isFrame ? "http://localhost:3000/api/animation/frame" : "http://localhost:3000/api/generate";
+    const outName = isFrame ? `frame-${Math.round(time)}ms.png` : `animation.${format}`;
+    const curl = `curl -X POST ${endpoint} \\\n  -H "Content-Type: application/json" \\\n  -H "Accept: ${mime}" \\\n  -d '${safeJson.replace(/'/g, "'\\''")}' \\\n  --output ${outName}`;
     await navigator.clipboard.writeText(curl);
     setCopiedCurl(true);
     setTimeout(() => setCopiedCurl(false), 2000);
@@ -1298,7 +1076,7 @@ export function AnimationTimeline() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `payload-${payloadMode}.json`;
+    a.download = `payload-${payloadTarget}-${payloadMode}.json`;
     document.body.appendChild(a);
     a.click();
     a.remove();
@@ -1351,11 +1129,15 @@ export function AnimationTimeline() {
         };
       }
 
+      const isPng = parsed.data?.format === "png" || payloadTarget === "frame-png";
+      const reqMime = isPng ? "image/png" : format === "gif" ? "image/gif" : "image/webp";
+      const ext = isPng ? "png" : format;
+
       const r = await fetch("/api/generate", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Accept: format === "gif" ? "image/gif" : "image/webp",
+          Accept: reqMime,
         },
         body: JSON.stringify(payloadToSend),
       });
@@ -1378,7 +1160,7 @@ export function AnimationTimeline() {
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `custom-render.${format}`;
+      a.download = isPng ? `custom-frame-${Math.round(time)}ms.png` : `custom-render.${ext}`;
       document.body.appendChild(a);
       a.click();
       a.remove();
@@ -1458,8 +1240,22 @@ export function AnimationTimeline() {
           </button>
 
           <button
+            onClick={exportCurrentFramePng}
+            disabled={exporting || exportingFrame}
+            className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 px-4 py-2 text-xs font-bold text-white shadow-lg shadow-emerald-900/30 transition hover:from-emerald-500 hover:to-teal-500 disabled:opacity-50"
+            title={`Xuất ảnh tĩnh PNG chất lượng cao tại thời điểm frame hiện tại (${Math.round(time)}ms)`}
+          >
+            {exportingFrame ? (
+              <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white border-t-transparent" />
+            ) : (
+              <Camera className="h-3.5 w-3.5" />
+            )}
+            <span>{exportingFrame ? "Exporting PNG..." : `Export Frame PNG (${Math.round(time)}ms)`}</span>
+          </button>
+
+          <button
             onClick={exportAnimation}
-            disabled={exporting}
+            disabled={exporting || exportingFrame}
             className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 px-4 py-2 text-xs font-bold text-white shadow-lg shadow-purple-600/30 transition hover:from-purple-500 hover:to-indigo-500 disabled:opacity-50"
           >
             {exporting ? (
@@ -1893,6 +1689,15 @@ export function AnimationTimeline() {
                 <span className="rounded bg-white/5 px-2 py-0.5 text-[10px] font-mono text-slate-400">
                   {Math.round((time / duration) * frameCount)} / {frameCount}f
                 </span>
+                <button
+                  onClick={exportCurrentFramePng}
+                  disabled={exporting || exportingFrame}
+                  className="flex items-center gap-1.5 rounded-lg border border-emerald-500/30 bg-emerald-950/40 px-2.5 py-1 text-[11px] font-semibold text-emerald-300 hover:bg-emerald-900/50 hover:border-emerald-400 transition disabled:opacity-50"
+                  title={`Xuất ảnh PNG frame này (${Math.round(time)}ms)`}
+                >
+                  <Camera className="h-3.5 w-3.5 text-emerald-400" />
+                  <span className="hidden sm:inline">Snap PNG</span>
+                </button>
               </div>
             </div>
           </div>
@@ -2077,13 +1882,13 @@ export function AnimationTimeline() {
 
                         {/* Keyframe diamonds */}
                         {keyframes.map((k) => {
-                          const isKfSelected = selectedKeyframeId === k.id && isTrackSelected;
+                          const kfId = k.id || `${e.id}-${k.time}`;
                           return (
                             <div
-                              key={k.id}
+                              key={kfId}
                               onPointerDown={(ev) => {
                                 const laneEl = ev.currentTarget.parentElement as HTMLDivElement;
-                                beginKeyframeDrag(ev, e.id, k.id, laneEl);
+                                beginKeyframeDrag(ev, e.id, kfId, laneEl);
                               }}
                               title={`Keyframe: ${k.time}ms (Kéo ngang để di chuyển)`}
                               className={`absolute top-2.5 z-30 h-5 w-5 -translate-x-1/2 rotate-45 rounded-[3px] border cursor-grab active:cursor-grabbing transition-transform hover:scale-125 ${
@@ -2713,33 +2518,62 @@ export function AnimationTimeline() {
               </button>
             </div>
 
-            {/* Modal Controls: Biến số & Trạng thái */}
+            {/* Modal Controls: Định dạng xuất & Biến số */}
             <div className="flex flex-wrap items-center justify-between gap-3 bg-black/40 p-3 rounded-xl border border-white/10">
-              {/* Variables Switcher (Unparsed vs Parsed) */}
-              <div className="flex items-center gap-2">
-                <span className="text-xs text-slate-400 font-medium">Biến số:</span>
-                <button
-                  type="button"
-                  onClick={() => handleSwitchPayloadMode("unparsed")}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition ${
-                    payloadMode === "unparsed"
-                      ? "bg-purple-600 text-white shadow-sm"
-                      : "text-slate-400 hover:text-white hover:bg-white/5"
-                  }`}
-                >
-                  📄 Chưa parse (Template {"{vars}"})
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleSwitchPayloadMode("parsed")}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition ${
-                    payloadMode === "parsed"
-                      ? "bg-purple-600 text-white shadow-sm"
-                      : "text-slate-400 hover:text-white hover:bg-white/5"
-                  }`}
-                >
-                  🚀 Đã parse (Thực tế)
-                </button>
+              {/* Target Switcher (Full Animation vs Single Frame PNG) */}
+              <div className="flex flex-wrap items-center gap-3">
+                <div className="flex items-center gap-1.5">
+                  <span className="text-xs text-slate-400 font-medium">Mục tiêu:</span>
+                  <button
+                    type="button"
+                    onClick={() => handleSwitchPayloadTarget("animation")}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition ${
+                      payloadTarget === "animation"
+                        ? "bg-purple-600 text-white shadow-sm"
+                        : "text-slate-400 hover:text-white hover:bg-white/5"
+                    }`}
+                  >
+                    🎬 Cả Animation ({format.toUpperCase()})
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleSwitchPayloadTarget("frame-png")}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition ${
+                      payloadTarget === "frame-png"
+                        ? "bg-emerald-600 text-white shadow-sm"
+                        : "text-slate-400 hover:text-white hover:bg-white/5"
+                    }`}
+                  >
+                    📸 Frame PNG ({Math.round(time)}ms)
+                  </button>
+                </div>
+
+                {/* Variables Switcher (Unparsed vs Parsed) */}
+                <div className="flex items-center gap-1.5 border-l border-white/10 pl-3">
+                  <span className="text-xs text-slate-400 font-medium">Biến:</span>
+                  <button
+                    type="button"
+                    onClick={() => handleSwitchPayloadMode("unparsed")}
+                    className={`px-2.5 py-1.5 rounded-lg text-xs font-semibold transition ${
+                      payloadMode === "unparsed"
+                        ? "bg-purple-600/80 text-white shadow-sm"
+                        : "text-slate-400 hover:text-white hover:bg-white/5"
+                    }`}
+                  >
+                    📄 Chưa parse
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleSwitchPayloadMode("parsed")}
+                    className={`px-2.5 py-1.5 rounded-lg text-xs font-semibold transition ${
+                      payloadMode === "parsed"
+                        ? "bg-purple-600/80 text-white shadow-sm"
+                        : "text-slate-400 hover:text-white hover:bg-white/5"
+                    }`}
+                  >
+                    🚀 Đã parse
+                  </button>
+                </div>
               </div>
 
               {/* Status Info & Reset */}

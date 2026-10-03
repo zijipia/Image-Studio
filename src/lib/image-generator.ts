@@ -924,8 +924,8 @@ export async function generateProfileImage(data: ProfileData): Promise<{ png: Bu
    ========================================================================= */
 
 export async function generateLeaderboardImage(data: LeaderboardData): Promise<{ png: Buffer; height: number }> {
-  const height = calculateLeaderboardHeight(data.items.length);
   const items = data.items || [];
+  const height = calculateLeaderboardHeight(items.length);
 
   const top1 = items.find((i) => i.rank === 1) || items[0];
   const top2 = items.find((i) => i.rank === 2) || items[1];
@@ -950,42 +950,128 @@ export async function generateLeaderboardImage(data: LeaderboardData): Promise<{
         flexDirection: "column",
         alignItems: "center",
         padding: "20px 18px",
-        background: "#1e1f23",
+        background: "#18191c",
         borderRadius: "16px",
       },
       children: [
+        // 1. Server Header Banner
         {
           type: "div",
           props: {
             style: {
-              width: "60px",
-              height: "60px",
-              borderRadius: "999px",
-              padding: "2px",
-              background: "rgba(255, 255, 255, 0.2)",
+              width: "100%",
+              height: "76px",
               display: "flex",
               alignItems: "center",
-              justifyContent: "center",
+              justifyContent: "space-between",
+              padding: "0 16px",
               marginBottom: "16px",
+              borderRadius: "14px",
+              background: "rgba(255, 255, 255, 0.04)",
+              border: "1px solid rgba(255, 255, 255, 0.08)",
             },
             children: [
               {
-                type: "img",
+                type: "div",
                 props: {
-                  src: guildIconUri,
-                  width: 56,
-                  height: 56,
                   style: {
-                    width: "56px",
-                    height: "56px",
-                    borderRadius: "999px",
-                    objectFit: "cover",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "12px",
                   },
+                  children: [
+                    {
+                      type: "div",
+                      props: {
+                        style: {
+                          width: "50px",
+                          height: "50px",
+                          borderRadius: "14px",
+                          overflow: "hidden",
+                          border: "2px solid rgba(245, 158, 11, 0.4)",
+                          background: "#0c0d12",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                        },
+                        children: [
+                          {
+                            type: "img",
+                            props: {
+                              src: guildIconUri,
+                              width: 50,
+                              height: 50,
+                              style: {
+                                width: "50px",
+                                height: "50px",
+                                borderRadius: "12px",
+                                objectFit: "cover",
+                              },
+                            },
+                          },
+                        ],
+                      },
+                    },
+                    {
+                      type: "div",
+                      props: {
+                        style: {
+                          display: "flex",
+                          flexDirection: "column",
+                        },
+                        children: [
+                          {
+                            type: "div",
+                            props: {
+                              style: {
+                                color: "#ffffff",
+                                fontSize: "17px",
+                                fontWeight: 700,
+                                letterSpacing: "0.4px",
+                              },
+                              children: data.guildName || "Server Leaderboard",
+                            },
+                          },
+                          {
+                            type: "div",
+                            props: {
+                              style: {
+                                color: "#94a3b8",
+                                fontSize: "11px",
+                                marginTop: "2px",
+                                display: "flex",
+                              },
+                              children: `Top ${items.length} Members · XP Rankings`,
+                            },
+                          },
+                        ],
+                      },
+                    },
+                  ],
+                },
+              },
+              {
+                type: "div",
+                props: {
+                  style: {
+                    padding: "5px 11px",
+                    borderRadius: "999px",
+                    background: "rgba(245, 158, 11, 0.15)",
+                    border: "1px solid rgba(245, 158, 11, 0.35)",
+                    color: "#fbbf24",
+                    fontSize: "11px",
+                    fontWeight: 700,
+                    letterSpacing: "0.5px",
+                    display: "flex",
+                  },
+                  children: "SEASON 1",
                 },
               },
             ],
           },
         },
+
+        // 2. Top 3 Podium
         {
           type: "div",
           props: {
@@ -994,30 +1080,101 @@ export async function generateLeaderboardImage(data: LeaderboardData): Promise<{
               display: "flex",
               alignItems: "flex-end",
               justifyContent: "center",
-              gap: "6px",
-              marginBottom: "14px",
+              gap: "8px",
+              marginBottom: "16px",
             },
             children: [
+              // Rank 2 (Left)
               {
                 type: "div",
                 props: {
                   style: {
                     flex: 1,
+                    height: "232px",
+                    position: "relative",
                     display: "flex",
                     flexDirection: "column",
                     alignItems: "center",
+                    justifyContent: "flex-end",
                   },
                   children: [
+                    // Pedestal box drawn FIRST in DOM
                     {
                       type: "div",
                       props: {
                         style: {
-                          position: "relative",
+                          width: "100%",
+                          height: "152px",
+                          background: "linear-gradient(180deg, #242a38 0%, #171b26 100%)",
+                          borderRadius: "14px 14px 0 0",
+                          borderTop: "3px solid #38bdf8",
+                          borderLeft: "1px solid rgba(56, 189, 248, 0.2)",
+                          borderRight: "1px solid rgba(56, 189, 248, 0.2)",
+                          paddingTop: "34px",
                           display: "flex",
+                          flexDirection: "column",
                           alignItems: "center",
-                          justifyContent: "center",
-                          marginBottom: "-15px",
-                          zIndex: 5,
+                        },
+                        children: [
+                          {
+                            type: "div",
+                            props: {
+                              style: {
+                                color: "#ffffff",
+                                fontSize: "15px",
+                                fontWeight: 600,
+                                width: "135px",
+                                textAlign: "center",
+                                overflow: "hidden",
+                                textOverflow: "ellipsis",
+                                whiteSpace: "nowrap",
+                              },
+                              children: top2?.username || "Player 2",
+                            },
+                          },
+                          {
+                            type: "div",
+                            props: {
+                              style: { color: "#94a3b8", fontSize: "11px", marginTop: "2px" },
+                              children: top2?.handle || "@player2",
+                            },
+                          },
+                          {
+                            type: "div",
+                            props: {
+                              style: {
+                                color: "#38bdf8",
+                                fontSize: "12px",
+                                fontWeight: 600,
+                                marginTop: "10px",
+                                background: "rgba(56, 189, 248, 0.12)",
+                                padding: "2px 8px",
+                                borderRadius: "999px",
+                                display: "flex",
+                              },
+                              children: `Level ${top2?.level ?? 1}`,
+                            },
+                          },
+                          {
+                            type: "div",
+                            props: {
+                              style: { color: "#38bdf8", fontSize: "12px", marginTop: "4px" },
+                              children: `${top2?.xp ?? 0} XP`,
+                            },
+                          },
+                        ],
+                      },
+                    },
+                    // Avatar and Badge drawn SECOND in DOM (sitting on top)
+                    {
+                      type: "div",
+                      props: {
+                        style: {
+                          position: "absolute",
+                          bottom: "124px",
+                          display: "flex",
+                          flexDirection: "column",
+                          alignItems: "center",
                         },
                         children: [
                           {
@@ -1039,15 +1196,14 @@ export async function generateLeaderboardImage(data: LeaderboardData): Promise<{
                             type: "div",
                             props: {
                               style: {
-                                position: "absolute",
-                                bottom: "-4px",
-                                width: "20px",
-                                height: "20px",
+                                marginTop: "-14px",
+                                width: "24px",
+                                height: "24px",
                                 borderRadius: "999px",
                                 background: "#38bdf8",
                                 color: "#000000",
                                 fontSize: "12px",
-                                fontWeight: 600,
+                                fontWeight: 700,
                                 display: "flex",
                                 alignItems: "center",
                                 justifyContent: "center",
@@ -1058,146 +1214,37 @@ export async function generateLeaderboardImage(data: LeaderboardData): Promise<{
                         ],
                       },
                     },
-                    {
-                      type: "div",
-                      props: {
-                        style: {
-                          width: "100%",
-                          height: "145px",
-                          background: "#383d47",
-                          borderRadius: "14px 14px 0 0",
-                          paddingTop: "24px",
-                          display: "flex",
-                          flexDirection: "column",
-                          alignItems: "center",
-                        },
-                        children: [
-                          {
-                            type: "div",
-                            props: {
-                              style: { color: "#ffffff", fontSize: "15px", fontWeight: 500, width: "135px", textAlign: "center", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" },
-                              children: top2?.username || "Player 2",
-                            },
-                          },
-                          {
-                            type: "div",
-                            props: {
-                              style: { color: "#9ca3af", fontSize: "11px", marginTop: "2px" },
-                              children: top2?.handle || "@player2",
-                            },
-                          },
-                          {
-                            type: "div",
-                            props: {
-                              style: { color: "#38bdf8", fontSize: "13px", marginTop: "12px" },
-                              children: `Level ${top2?.level ?? 1}`,
-                            },
-                          },
-                          {
-                            type: "div",
-                            props: {
-                              style: { color: "#38bdf8", fontSize: "12px", marginTop: "2px" },
-                              children: `${top2?.xp ?? 0} XP`,
-                            },
-                          },
-                        ],
-                      },
-                    },
                   ],
                 },
               },
+
+              // Rank 1 (Center)
               {
                 type: "div",
                 props: {
                   style: {
                     flex: 1.1,
+                    height: "265px",
+                    position: "relative",
                     display: "flex",
                     flexDirection: "column",
                     alignItems: "center",
+                    justifyContent: "flex-end",
                   },
                   children: [
-                    {
-                      type: "div",
-                      props: {
-                        style: {
-                          display: "flex",
-                          flexDirection: "column",
-                          alignItems: "center",
-                          marginBottom: "-18px",
-                          zIndex: 6,
-                        },
-                        children: [
-                          {
-                            type: "div",
-                            props: {
-                              style: {
-                                color: "#f59e0b",
-                                fontSize: "20px",
-                                marginBottom: "2px",
-                              },
-                              children: "👑",
-                            },
-                          },
-                          {
-                            type: "div",
-                            props: {
-                              style: {
-                                position: "relative",
-                                display: "flex",
-                                alignItems: "center",
-                                justifyContent: "center",
-                              },
-                              children: [
-                                {
-                                  type: "img",
-                                  props: {
-                                    src: top1Uri,
-                                    width: 72,
-                                    height: 72,
-                                    style: {
-                                      width: "72px",
-                                      height: "72px",
-                                      borderRadius: "999px",
-                                      border: "3px solid #f59e0b",
-                                      objectFit: "cover",
-                                    },
-                                  },
-                                },
-                                {
-                                  type: "div",
-                                  props: {
-                                    style: {
-                                      position: "absolute",
-                                      bottom: "-4px",
-                                      width: "22px",
-                                      height: "22px",
-                                      borderRadius: "999px",
-                                      background: "#f59e0b",
-                                      color: "#000000",
-                                      fontSize: "13px",
-                                      fontWeight: 600,
-                                      display: "flex",
-                                      alignItems: "center",
-                                      justifyContent: "center",
-                                    },
-                                    children: "1",
-                                  },
-                                },
-                              ],
-                            },
-                          },
-                        ],
-                      },
-                    },
+                    // Pedestal box drawn FIRST in DOM
                     {
                       type: "div",
                       props: {
                         style: {
                           width: "100%",
-                          height: "170px",
-                          background: "#424854",
+                          height: "178px",
+                          background: "linear-gradient(180deg, #2d263b 0%, #1c1827 100%)",
                           borderRadius: "14px 14px 0 0",
-                          paddingTop: "26px",
+                          borderTop: "3px solid #f59e0b",
+                          borderLeft: "1px solid rgba(245, 158, 11, 0.25)",
+                          borderRight: "1px solid rgba(245, 158, 11, 0.25)",
+                          paddingTop: "36px",
                           display: "flex",
                           flexDirection: "column",
                           alignItems: "center",
@@ -1206,29 +1253,134 @@ export async function generateLeaderboardImage(data: LeaderboardData): Promise<{
                           {
                             type: "div",
                             props: {
-                              style: { color: "#ffffff", fontSize: "16px", fontWeight: 500, width: "145px", textAlign: "center", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" },
+                              style: {
+                                color: "#ffffff",
+                                fontSize: "16px",
+                                fontWeight: 700,
+                                width: "145px",
+                                textAlign: "center",
+                                overflow: "hidden",
+                                textOverflow: "ellipsis",
+                                whiteSpace: "nowrap",
+                              },
                               children: top1?.username || "Winner",
                             },
                           },
                           {
                             type: "div",
                             props: {
-                              style: { color: "#9ca3af", fontSize: "11px", marginTop: "2px" },
+                              style: { color: "#94a3b8", fontSize: "11px", marginTop: "2px" },
                               children: top1?.handle || "@winner",
                             },
                           },
                           {
                             type: "div",
                             props: {
-                              style: { color: "#f59e0b", fontSize: "14px", marginTop: "14px" },
+                              style: {
+                                color: "#f59e0b",
+                                fontSize: "12px",
+                                fontWeight: 700,
+                                marginTop: "10px",
+                                background: "rgba(245, 158, 11, 0.18)",
+                                padding: "2px 10px",
+                                borderRadius: "999px",
+                                display: "flex",
+                              },
                               children: `Level ${top1?.level ?? 1}`,
                             },
                           },
                           {
                             type: "div",
                             props: {
-                              style: { color: "#f59e0b", fontSize: "12px", marginTop: "2px" },
+                              style: { color: "#f59e0b", fontSize: "12px", fontWeight: 600, marginTop: "4px" },
                               children: `${top1?.xp ?? 0} XP`,
+                            },
+                          },
+                        ],
+                      },
+                    },
+                    // Crown, Avatar and Badge drawn SECOND in DOM
+                    {
+                      type: "div",
+                      props: {
+                        style: {
+                          position: "absolute",
+                          bottom: "146px",
+                          display: "flex",
+                          flexDirection: "column",
+                          alignItems: "center",
+                        },
+                        children: [
+                          // Vector SVG Crown
+                          {
+                            type: "svg",
+                            props: {
+                              width: 32,
+                              height: 22,
+                              viewBox: "0 0 34 24",
+                              style: { width: "32px", height: "22px", marginBottom: "4px" },
+                              children: [
+                                {
+                                  type: "path",
+                                  props: {
+                                    d: "M3 20h28v2H3v-2zm1.5-14l6.5 6 6-10 6 10 6.5-6 2 12H2.5l2-12z",
+                                    fill: "#f59e0b",
+                                  },
+                                },
+                                {
+                                  type: "path",
+                                  props: {
+                                    d: "M17 2l-6 10 6-3 6 3-6-10z",
+                                    fill: "#fbbf24",
+                                  },
+                                },
+                                {
+                                  type: "circle",
+                                  props: { cx: 4.5, cy: 5.5, r: 1.8, fill: "#fef08a" },
+                                },
+                                {
+                                  type: "circle",
+                                  props: { cx: 17, cy: 1.8, r: 2.2, fill: "#fef08a" },
+                                },
+                                {
+                                  type: "circle",
+                                  props: { cx: 29.5, cy: 5.5, r: 1.8, fill: "#fef08a" },
+                                },
+                              ],
+                            },
+                          },
+                          {
+                            type: "img",
+                            props: {
+                              src: top1Uri,
+                              width: 72,
+                              height: 72,
+                              style: {
+                                width: "72px",
+                                height: "72px",
+                                borderRadius: "999px",
+                                border: "3px solid #f59e0b",
+                                objectFit: "cover",
+                              },
+                            },
+                          },
+                          {
+                            type: "div",
+                            props: {
+                              style: {
+                                marginTop: "-14px",
+                                width: "26px",
+                                height: "26px",
+                                borderRadius: "999px",
+                                background: "#f59e0b",
+                                color: "#000000",
+                                fontSize: "13px",
+                                fontWeight: 700,
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                              },
+                              children: "1",
                             },
                           },
                         ],
@@ -1237,26 +1389,98 @@ export async function generateLeaderboardImage(data: LeaderboardData): Promise<{
                   ],
                 },
               },
+
+              // Rank 3 (Right)
               {
                 type: "div",
                 props: {
                   style: {
                     flex: 1,
+                    height: "218px",
+                    position: "relative",
                     display: "flex",
                     flexDirection: "column",
                     alignItems: "center",
+                    justifyContent: "flex-end",
                   },
                   children: [
+                    // Pedestal box drawn FIRST in DOM
                     {
                       type: "div",
                       props: {
                         style: {
-                          position: "relative",
+                          width: "100%",
+                          height: "138px",
+                          background: "linear-gradient(180deg, #2b2323 0%, #1b1717 100%)",
+                          borderRadius: "14px 14px 0 0",
+                          borderTop: "3px solid #f97316",
+                          borderLeft: "1px solid rgba(249, 115, 22, 0.2)",
+                          borderRight: "1px solid rgba(249, 115, 22, 0.2)",
+                          paddingTop: "34px",
                           display: "flex",
+                          flexDirection: "column",
                           alignItems: "center",
-                          justifyContent: "center",
-                          marginBottom: "-15px",
-                          zIndex: 5,
+                        },
+                        children: [
+                          {
+                            type: "div",
+                            props: {
+                              style: {
+                                color: "#ffffff",
+                                fontSize: "14px",
+                                fontWeight: 600,
+                                width: "135px",
+                                textAlign: "center",
+                                overflow: "hidden",
+                                textOverflow: "ellipsis",
+                                whiteSpace: "nowrap",
+                              },
+                              children: top3?.username || "Player 3",
+                            },
+                          },
+                          {
+                            type: "div",
+                            props: {
+                              style: { color: "#94a3b8", fontSize: "11px", marginTop: "2px" },
+                              children: top3?.handle || "@player3",
+                            },
+                          },
+                          {
+                            type: "div",
+                            props: {
+                              style: {
+                                color: "#f97316",
+                                fontSize: "12px",
+                                fontWeight: 600,
+                                marginTop: "10px",
+                                background: "rgba(249, 115, 22, 0.12)",
+                                padding: "2px 8px",
+                                borderRadius: "999px",
+                                display: "flex",
+                              },
+                              children: `Level ${top3?.level ?? 1}`,
+                            },
+                          },
+                          {
+                            type: "div",
+                            props: {
+                              style: { color: "#f97316", fontSize: "12px", marginTop: "4px" },
+                              children: `${top3?.xp ?? 0} XP`,
+                            },
+                          },
+                        ],
+                      },
+                    },
+                    // Avatar and Badge drawn SECOND in DOM
+                    {
+                      type: "div",
+                      props: {
+                        style: {
+                          position: "absolute",
+                          bottom: "110px",
+                          display: "flex",
+                          flexDirection: "column",
+                          alignItems: "center",
                         },
                         children: [
                           {
@@ -1269,7 +1493,7 @@ export async function generateLeaderboardImage(data: LeaderboardData): Promise<{
                                 width: "64px",
                                 height: "64px",
                                 borderRadius: "999px",
-                                border: "3px solid #22c55e",
+                                border: "3px solid #f97316",
                                 objectFit: "cover",
                               },
                             },
@@ -1278,65 +1502,19 @@ export async function generateLeaderboardImage(data: LeaderboardData): Promise<{
                             type: "div",
                             props: {
                               style: {
-                                position: "absolute",
-                                bottom: "-4px",
-                                width: "20px",
-                                height: "20px",
+                                marginTop: "-14px",
+                                width: "24px",
+                                height: "24px",
                                 borderRadius: "999px",
-                                background: "#22c55e",
+                                background: "#f97316",
                                 color: "#000000",
                                 fontSize: "12px",
-                                fontWeight: 600,
+                                fontWeight: 700,
                                 display: "flex",
                                 alignItems: "center",
                                 justifyContent: "center",
                               },
                               children: "3",
-                            },
-                          },
-                        ],
-                      },
-                    },
-                    {
-                      type: "div",
-                      props: {
-                        style: {
-                          width: "100%",
-                          height: "135px",
-                          background: "#383d47",
-                          borderRadius: "14px 14px 0 0",
-                          paddingTop: "24px",
-                          display: "flex",
-                          flexDirection: "column",
-                          alignItems: "center",
-                        },
-                        children: [
-                          {
-                            type: "div",
-                            props: {
-                              style: { color: "#ffffff", fontSize: "14px", fontWeight: 500, width: "135px", textAlign: "center", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" },
-                              children: top3?.username || "Player 3",
-                            },
-                          },
-                          {
-                            type: "div",
-                            props: {
-                              style: { color: "#9ca3af", fontSize: "11px", marginTop: "2px" },
-                              children: top3?.handle || "@player3",
-                            },
-                          },
-                          {
-                            type: "div",
-                            props: {
-                              style: { color: "#22c55e", fontSize: "13px", marginTop: "12px" },
-                              children: `Level ${top3?.level ?? 1}`,
-                            },
-                          },
-                          {
-                            type: "div",
-                            props: {
-                              style: { color: "#22c55e", fontSize: "12px", marginTop: "2px" },
-                              children: `${top3?.xp ?? 0} XP`,
                             },
                           },
                         ],
@@ -1348,6 +1526,8 @@ export async function generateLeaderboardImage(data: LeaderboardData): Promise<{
             ],
           },
         },
+
+        // 3. Ranks 4 to N List
         {
           type: "div",
           props: {
@@ -1363,7 +1543,8 @@ export async function generateLeaderboardImage(data: LeaderboardData): Promise<{
                 style: {
                   width: "100%",
                   height: "68px",
-                  background: "#4f5563",
+                  background: "rgba(255, 255, 255, 0.04)",
+                  border: "1px solid rgba(255, 255, 255, 0.06)",
                   borderRadius: "12px",
                   display: "flex",
                   alignItems: "center",
@@ -1384,14 +1565,14 @@ export async function generateLeaderboardImage(data: LeaderboardData): Promise<{
                         {
                           type: "div",
                           props: {
-                            style: { color: "#ffffff", fontSize: "18px", fontWeight: 600, lineHeight: "20px" },
+                            style: { color: "#ffffff", fontSize: "18px", fontWeight: 700, lineHeight: "20px" },
                             children: String(item.rank),
                           },
                         },
                         {
                           type: "div",
                           props: {
-                            style: { color: "#9ca3af", fontSize: "10px", lineHeight: "12px" },
+                            style: { color: "#94a3b8", fontSize: "10px", lineHeight: "12px" },
                             children: "Rank",
                           },
                         },
@@ -1408,6 +1589,7 @@ export async function generateLeaderboardImage(data: LeaderboardData): Promise<{
                         width: "46px",
                         height: "46px",
                         borderRadius: "999px",
+                        border: "2px solid rgba(255, 255, 255, 0.12)",
                         objectFit: "cover",
                         marginRight: "14px",
                       },
@@ -1426,14 +1608,14 @@ export async function generateLeaderboardImage(data: LeaderboardData): Promise<{
                         {
                           type: "div",
                           props: {
-                            style: { color: "#ffffff", fontSize: "16px", fontWeight: 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" },
+                            style: { color: "#ffffff", fontSize: "15px", fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" },
                             children: item.username,
                           },
                         },
                         {
                           type: "div",
                           props: {
-                            style: { color: "#cbd5e1", fontSize: "12px", marginTop: "2px" },
+                            style: { color: "#94a3b8", fontSize: "12px", marginTop: "2px" },
                             children: item.handle,
                           },
                         },
@@ -1452,14 +1634,14 @@ export async function generateLeaderboardImage(data: LeaderboardData): Promise<{
                         {
                           type: "div",
                           props: {
-                            style: { color: "#f1f5f9", fontSize: "13px" },
+                            style: { color: "#f1f5f9", fontSize: "13px", fontWeight: 600 },
                             children: `Level ${item.level}`,
                           },
                         },
                         {
                           type: "div",
                           props: {
-                            style: { color: "#cbd5e1", fontSize: "12px", marginTop: "2px" },
+                            style: { color: "#94a3b8", fontSize: "12px", marginTop: "2px" },
                             children: `${item.xp} XP`,
                           },
                         },

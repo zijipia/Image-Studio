@@ -239,6 +239,7 @@ export const defaultProfileData: ProfileData = {
 };
 
 export const defaultLeaderboardData: LeaderboardData = {
+  guildName: "Server Leaderboard",
   guildIcon: "https://i.ytimg.com/vi/NRRXrZnhT5s/hq720.jpg",
   items: [
     {

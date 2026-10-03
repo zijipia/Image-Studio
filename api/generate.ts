@@ -16,6 +16,25 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(400).json({ error: "Invalid payload: request body is required." });
     }
 
+    // Support extracting single PNG frame from animation via query or body
+    if (body.type === "animated" && body.data) {
+      const qFrame = req.query.frame ?? req.query.frameIndex;
+      const qTime = req.query.time ?? req.query.frameTime;
+      const qFormat = req.query.format;
+
+      if (qFrame !== undefined) {
+        body.data.frameIndex = parseInt(qFrame as string, 10);
+        body.data.format = "png";
+      }
+      if (qTime !== undefined) {
+        body.data.frameTime = parseFloat(qTime as string);
+        body.data.format = "png";
+      }
+      if (qFormat === "png") {
+        body.data.format = "png";
+      }
+    }
+
     const { buffer, height, mime, filename } = await dispatchGenerate(body);
     const totalCount = incrementGeneratedCount();
 

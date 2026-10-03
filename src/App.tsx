@@ -5,7 +5,6 @@ import type {
   ProfileData,
   LeaderboardData,
   QuoteData,
-  CustomCanvasData,
   AnyGenerateRequest,
 } from "./lib/types";
 import {
@@ -14,7 +13,6 @@ import {
   defaultLeaderboardData,
   defaultQuoteData,
 } from "./lib/sample-data";
-import { DEFAULT_CUSTOM_CANVAS } from "./lib/constants";
 import { useStats, recordGeneratedImage } from "./lib/use-stats";
 import { GeneratorForm } from "./components/GeneratorForm";
 import { ImagePreview } from "./components/ImagePreview";
@@ -24,7 +22,6 @@ import { LeaderboardForm } from "./components/LeaderboardForm";
 import { LeaderboardPreview } from "./components/LeaderboardPreview";
 import { QuoteForm } from "./components/QuoteForm";
 import { QuotePreview } from "./components/QuotePreview";
-import { CustomBuilder } from "./components/CustomBuilder";
 import { AnimationTimeline } from "./components/AnimationTimeline";
 import {
   Music,
@@ -38,7 +35,6 @@ import {
   HelpCircle,
   Code2,
   Zap,
-  Palette,
   Film,
 } from "lucide-react";
 
@@ -48,8 +44,7 @@ export function getModeFromPath(pathname: string, search = ""): GeneratorType {
   if (clean === "/profile" || clean === "/rank") return "profile";
   if (clean === "/leaderboard" || clean === "/leaderboards") return "leaderboard";
   if (clean === "/quote" || clean === "/quotes") return "quote";
-  if (clean === "/custom" || clean === "/builder") return "custom";
-  if (clean === "/song" || clean === "/songs") return "song";
+  if (clean === "/song" || clean === "/songs" || clean === "/custom") return "song";
 
   const params = new URLSearchParams(search);
   const q = params.get("mode") || params.get("studio");
@@ -57,7 +52,6 @@ export function getModeFromPath(pathname: string, search = ""): GeneratorType {
   if (q === "profile") return "profile";
   if (q === "leaderboard") return "leaderboard";
   if (q === "quote") return "quote";
-  if (q === "custom") return "custom";
   if (q === "song") return "song";
 
   return "song";
@@ -73,8 +67,6 @@ export function getPathFromMode(mode: GeneratorType): string {
       return "/leaderboard";
     case "quote":
       return "/quote";
-    case "custom":
-      return "/custom";
     case "song":
     default:
       return "/song";
@@ -125,7 +117,6 @@ export default function App() {
   const [profileData, setProfileData] = useState<ProfileData>(defaultProfileData);
   const [leaderboardData, setLeaderboardData] = useState<LeaderboardData>(defaultLeaderboardData);
   const [quoteData, setQuoteData] = useState<QuoteData>(defaultQuoteData);
-  const [customCanvasData, setCustomCanvasData] = useState<CustomCanvasData>(DEFAULT_CUSTOM_CANVAS);
 
   const [isGenerating, setIsGenerating] = useState<boolean>(false);
   const [lastBlob, setLastBlob] = useState<Blob | null>(null);
@@ -140,7 +131,7 @@ export default function App() {
   };
 
   const handleGenerate = useCallback(
-    async (overrideCustomCanvas?: CustomCanvasData) => {
+    async () => {
       setIsGenerating(true);
 
       let payload: AnyGenerateRequest;
@@ -169,9 +160,15 @@ export default function App() {
         payload = { type: "quote", data: quoteData };
         defaultFilename = `${quoteData.author || "quote"}.png`;
       } else {
-        const activeCanvas = overrideCustomCanvas || customCanvasData;
-        payload = { type: "custom", data: activeCanvas };
-        defaultFilename = `${(activeCanvas.title || "custom-design").replace(/\s+/g, "-")}.png`;
+        payload = {
+          type: "animated",
+          data: {
+            title: "Animation Frame",
+            format: "png",
+            frameTime: 0,
+          },
+        };
+        defaultFilename = "animation-frame.png";
       }
 
       try {
@@ -211,7 +208,7 @@ export default function App() {
         setIsGenerating(false);
       }
     },
-    [activeMode, songTitle, songs, profileData, leaderboardData, quoteData, customCanvasData]
+    [activeMode, songTitle, songs, songLayout, profileData, leaderboardData, quoteData]
   );
 
   return (
@@ -285,13 +282,6 @@ export default function App() {
             className={`transition-colors ${activeMode === "quote" ? "text-indigo-400 font-semibold" : "hover:text-indigo-300"}`}
           >
             Quote Card
-          </a>
-          <a
-            href="/custom"
-            onClick={(e) => handleLinkClick(e, "custom")}
-            className={`transition-colors ${activeMode === "custom" ? "text-cyan-400 font-semibold" : "hover:text-cyan-300"}`}
-          >
-            Custom Studio
           </a>
           <a
             href="/animation"
@@ -403,19 +393,6 @@ export default function App() {
               </a>
 
               <a
-                href="/custom"
-                onClick={(e) => handleLinkClick(e, "custom")}
-                className={`flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-medium transition-all ${
-                  activeMode === "custom"
-                    ? "bg-cyan-600 text-white shadow-md shadow-cyan-900/40 font-semibold"
-                    : "text-slate-400 hover:text-white hover:bg-white/5"
-                }`}
-              >
-                <Palette className="h-4 w-4" />
-                <span>Custom Studio</span>
-              </a>
-
-              <a
                 href="/animation"
                 onClick={(e) => handleLinkClick(e, "animated")}
                 className={`flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-medium transition-all ${
@@ -444,7 +421,7 @@ export default function App() {
           </div>
 
           {/* Mode 1-4: Dual Panel Grid (Song, Profile, Leaderboard, Quote) */}
-          {activeMode !== "custom" && activeMode !== "animated" && (
+          {activeMode !== "animated" && (
             <div className="grid grid-cols-1 gap-8 lg:grid-cols-[480px_1fr] xl:grid-cols-[540px_1fr]">
               <div className="rounded-2xl border border-white/10 bg-[#0e0a1e]/80 p-5 shadow-xl backdrop-blur-md">
                 {activeMode === "song" && (
@@ -530,19 +507,7 @@ export default function App() {
             </div>
           )}
 
-          {/* Mode 5: Custom Studio Canvas Builder */}
-          {activeMode === "custom" && (
-            <CustomBuilder
-              onGenerate={(customData) => {
-                setCustomCanvasData(customData);
-                handleGenerate(customData);
-              }}
-              isGenerating={isGenerating}
-              lastGeneratedBlob={lastBlob}
-            />
-          )}
-
-          {/* Mode 6: Animation Studio */}
+          {/* Animation Studio */}
           {activeMode === "animated" && (
             <AnimationTimeline />
           )}
@@ -653,21 +618,34 @@ Content-Type: application/json
               </div>
 
               <div>
-                <h4 className="font-semibold text-cyan-300">5. Custom Canvas Designer Endpoint</h4>
-                <pre className="mt-1.5 overflow-x-auto rounded-xl bg-black/60 p-3 font-mono text-xs text-cyan-200 border border-white/10">
-{`POST /api/generate
+                <h4 className="font-semibold text-fuchsia-300">5. Animation Studio & Single Frame PNG Extraction API</h4>
+                <p className="mt-1 text-slate-400 text-xs">Supports animated <code>"format": "gif" | "webp"</code> as well as extracting static PNG frames via dedicated <code>/api/animation/frame</code> or <code>/api/generate?time=...</code>.</p>
+                <pre className="mt-1.5 overflow-x-auto rounded-xl bg-black/60 p-3 font-mono text-xs text-fuchsia-200 border border-white/10">
+{`// 1) Dedicated Frame Endpoint (POST custom canvas or GET preset)
+POST /api/animation/frame?time=350
 Content-Type: application/json
 
 {
-  "type": "custom",
+  "canvas": { "title": "Welcome", "width": 930, "height": 280, "background": "#000", "elements": [...] },
+  "tracks": [...],
+  "templateVariables": { "userName": "Daniel", "guildName": "Legends" }
+}
+
+// Direct GET URL for web/bots:
+GET /api/animation/frame?preset=welcome&time=350&userName=Daniel
+
+// 2) Universal /api/generate endpoint
+POST /api/generate?time=350&format=png
+Content-Type: application/json
+
+{
+  "type": "animated",
   "data": {
-    "title": "Custom Card",
-    "width": 900,
-    "height": 400,
-    "background": "linear-gradient(135deg, #090210 0%, #630c33 100%)",
-    "elements": [
-      { "id": "1", "type": "text", "x": 50, "y": 50, "width": 200, "height": 30, "content": "Hello", "color": "#fff", "fontSize": 24 }
-    ]
+    "title": "Welcome Animation",
+    "format": "png",
+    "frameTime": 350, // in milliseconds
+    "canvas": { ... },
+    "tracks": [...]
   }
 }`}
                 </pre>
@@ -691,7 +669,7 @@ Content-Type: application/json
         <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-3 sm:flex-row">
           <span>Image Studio © 2026 · Satori & Sharp Pipeline</span>
           <div className="flex items-center gap-4 text-slate-400">
-            <span>5 Modes: Song · Profile · Leaderboard · Quote · Custom Studio</span>
+            <span>Modes: Song · Profile · Leaderboard · Quote · Animation Studio</span>
             <span>·</span>
             <span>Fast Server Rendering</span>
           </div>

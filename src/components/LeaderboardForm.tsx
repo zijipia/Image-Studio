@@ -114,19 +114,35 @@ export function LeaderboardForm({
 
       {tab === "visual" ? (
         <div className="space-y-4">
-          <div>
-            <label className="text-xs font-semibold text-amber-300">Guild / Server Icon URL</label>
-            <input
-              type="url"
-              value={data.guildIcon}
-              onChange={(e) => {
-                const next = { ...data, guildIcon: e.target.value };
-                onChange(next);
-                syncJson(next);
-              }}
-              placeholder="https://..."
-              className="mt-1 w-full rounded-xl border border-white/10 bg-black/40 px-3.5 py-2 text-xs text-white focus:border-amber-500 focus:outline-none"
-            />
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label className="text-xs font-semibold text-amber-300">Server / Guild Name</label>
+              <input
+                type="text"
+                value={data.guildName || ""}
+                onChange={(e) => {
+                  const next = { ...data, guildName: e.target.value };
+                  onChange(next);
+                  syncJson(next);
+                }}
+                placeholder="e.g. Community Leaderboard"
+                className="mt-1 w-full rounded-xl border border-white/10 bg-black/40 px-3.5 py-2 text-xs text-white focus:border-amber-500 focus:outline-none"
+              />
+            </div>
+            <div>
+              <label className="text-xs font-semibold text-amber-300">Guild / Server Icon URL</label>
+              <input
+                type="url"
+                value={data.guildIcon}
+                onChange={(e) => {
+                  const next = { ...data, guildIcon: e.target.value };
+                  onChange(next);
+                  syncJson(next);
+                }}
+                placeholder="https://..."
+                className="mt-1 w-full rounded-xl border border-white/10 bg-black/40 px-3.5 py-2 text-xs text-white focus:border-amber-500 focus:outline-none"
+              />
+            </div>
           </div>
 
           <div className="flex items-center justify-between">

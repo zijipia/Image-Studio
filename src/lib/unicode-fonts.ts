@@ -42,6 +42,8 @@ const LANGUAGE_FONTS: Record<string, string> = {
   "vi": "Noto Sans",
   "vi-VN": "Noto Sans",
   "devanagari": "Noto Sans Devanagari",
+  "symbol": "Noto Sans Symbols 2",
+  "math": "Noto Sans Math",
 };
 
 /**
@@ -143,11 +145,67 @@ async function loadGoogleFont(family: string, text: string): Promise<Buffer> {
  * text still contains Vietnamese Extended glyphs that are absent from the
  * bundled Roboto subset.
  */
+const twemojiCache = new Map<string, Promise<string>>();
+
+function toCodePoint(unicodeSurrogates: string): string {
+  const r: string[] = [];
+  let c = 0, p = 0, i = 0;
+  while (i < unicodeSurrogates.length) {
+    c = unicodeSurrogates.charCodeAt(i++);
+    if (p) {
+      r.push((0x10000 + ((p - 0xd800) << 10) + (c - 0xdc00)).toString(16));
+      p = 0;
+    } else if (0xd800 <= c && c <= 0xdbff) {
+      p = c;
+    } else {
+      r.push(c.toString(16));
+    }
+  }
+  return r.filter((cp) => cp !== "fe0f").join("-");
+}
+
+async function loadTwemojiAsset(text: string): Promise<string> {
+  const codePoint = toCodePoint(text);
+  if (!codePoint) return "";
+  if (twemojiCache.has(codePoint)) {
+    return twemojiCache.get(codePoint)!;
+  }
+
+  const promise = (async () => {
+    try {
+      const url = `https://cdnjs.cloudflare.com/ajax/libs/twemoji/14.0.2/svg/${codePoint}.svg`;
+      const res = await fetch(url);
+      if (res.ok) {
+        const svg = await res.text();
+        return `data:image/svg+xml;base64,${Buffer.from(svg).toString("base64")}`;
+      }
+      const altUrl = `https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/svg/${codePoint}.svg`;
+      const altRes = await fetch(altUrl);
+      if (altRes.ok) {
+        const svg = await altRes.text();
+        return `data:image/svg+xml;base64,${Buffer.from(svg).toString("base64")}`;
+      }
+      return "";
+    } catch {
+      return "";
+    }
+  })();
+
+  twemojiCache.set(codePoint, promise);
+  return promise;
+}
+
 export async function loadSatoriAdditionalAsset(
   languageCode: string,
   text: string,
-): Promise<SatoriFont[]> {
-  if (!text || languageCode === "emoji") return [];
+): Promise<string | SatoriFont[]> {
+  if (!text) return [];
+
+  if (languageCode === "emoji") {
+    const dataUri = await loadTwemojiAsset(text);
+    if (dataUri) return dataUri;
+    return [];
+  }
 
   const sources: FontSource[] = [];
   const seen = new Set<string>();

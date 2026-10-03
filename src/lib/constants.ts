@@ -64,8 +64,12 @@ export const PROFILE_HEIGHT = 260;
 // Leaderboard Constants
 export const LEADERBOARD_WIDTH = 540;
 export function calculateLeaderboardHeight(itemCount: number): number {
-  const remaining = Math.max(0, itemCount - 3);
-  return 70 + 230 + remaining * 76 + 30;
+  if (itemCount <= 0) return 420;
+  if (itemCount <= 3) {
+    return 20 + 76 + 16 + 265 + 20; // 397px for top 3 podium only
+  }
+  const remaining = itemCount - 3;
+  return 20 + 76 + 16 + 265 + 16 + remaining * 68 + Math.max(0, remaining - 1) * 8 + 20;
 }
 
 // Quote Card Constants
